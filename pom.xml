@@ -12,21 +12,27 @@
     CadenzaFlow Identity Provider Plugin for Keycloak. Fork of
     cibseven-keycloak (the maintained continuation of the EOL
     camunda-platform-7-keycloak community plugin), re-namespaced to
-    org.cadenzaflow and built against the CadenzaFlow engine (Java 11,
-    spring-web 5.x / httpclient 4.x so it runs on every supported runtime).
+    org.cadenzaflow. Two dependency lines: the primary artifact keeps
+    the upstream spring-web 6 / httpclient5 code (Java 17 - Run, Spring Boot
+    starter, jakarta); the -java11 artifact ports the HTTP wiring to
+    spring-web 5.3 / httpclient 4 for the javax Tomcat distribution (JDK 11).
   </description>
   <url>https://github.com/cadenzaflow/cadenzaflow-keycloak</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <version.java>11</version.java>
 
     <!-- the engine this plugin is built and tested against -->
     <version.cadenzaflow>1.2.0</version.cadenzaflow>
 
-    <!-- Java 11 compatible dependency line (spring-web 6 / httpclient5 need Java 17) -->
-    <version.spring-web>5.3.39</version.spring-web>
-    <version.httpclient>4.5.14</version.httpclient>
+    <!-- primary line (upstream code, Java 17): Run / SB starter / jakarta -->
+    <version.spring-web6>6.2.11</version.spring-web6>
+    <version.httpclient5>5.4.1</version.httpclient5>
+
+    <!-- java11 line: javax Tomcat distribution -->
+    <version.spring-web5>5.3.39</version.spring-web5>
+    <version.httpclient4>4.5.14</version.httpclient4>
+
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.gson>2.11.0</version.gson>
     <version.caffeine>3.1.8</version.caffeine>
@@ -34,10 +40,13 @@
 
   <modules>
     <module>extension</module>
+    <module>extension-java11</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
+      <!-- spring-web and the http client are intentionally NOT managed here:
+           the two modules use different major lines of both -->
       <dependency>
         <groupId>org.cadenzaflow.bpm</groupId>
         <artifactId>cadenzaflow-engine</artifactId>
@@ -47,16 +56,6 @@
         <groupId>org.cadenzaflow.commons</groupId>
         <artifactId>cadenzaflow-commons-logging</artifactId>
         <version>${version.cadenzaflow}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-web</artifactId>
-        <version>${version.spring-web}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>${version.httpclient}</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
@@ -91,9 +90,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.13.0</version>
-          <configuration>
-            <release>${version.java}</release>
-          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.6.0</version>
         </plugin>
       </plugins>
     </pluginManagement>

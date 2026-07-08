@@ -7,11 +7,16 @@
       <version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-    <artifactId>cadenzaflow-keycloak</artifactId>
+    <artifactId>cadenzaflow-keycloak-java11</artifactId>
 
 	<packaging>jar</packaging>
-    <name>CadenzaFlow - engine plugins - identity - keycloak - extension</name>
-	<description>CadenzaFlow Identity Provider Plugin for Keycloak (primary line: upstream spring-web 6 / httpclient5 code, Java 17 - for Run, the Spring Boot starter and jakarta environments)</description>
+    <name>CadenzaFlow - engine plugins - identity - keycloak - extension (Java 11)</name>
+	<description>
+	  Java 11 line of the CadenzaFlow Keycloak identity plugin for the javax
+	  Tomcat distribution: same sources as the primary artifact except
+	  KeycloakIdentityProviderFactory, whose HTTP wiring is ported to
+	  spring-web 5.3 / httpclient 4 (spring-web 6 requires Java 17).
+	</description>
 
 	<properties>
 		<failOnMissingWebXml>false</failOnMissingWebXml>
@@ -27,7 +32,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-web</artifactId>
-			<version>${version.spring-web6}</version>
+			<version>${version.spring-web5}</version>
 		</dependency>
 
 		<dependency>
@@ -36,9 +41,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.httpcomponents.client5</groupId>
-			<artifactId>httpclient5</artifactId>
-			<version>${version.httpclient5}</version>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>${version.httpclient4}</version>
 		</dependency>
 
 		<dependency>
@@ -55,18 +60,39 @@
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
 		</dependency>
-
-		<!-- Test dependencies intentionally absent: upstream suite parked under
-		     upstream-tests/ pending migration. -->
 	</dependencies>
 
 	<build>
 		<plugins>
 			<plugin>
+				<!-- share the primary module sources; the factory is excluded
+				     below and replaced by this module's hc4-ported copy -->
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-shared-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.basedir}/../extension/src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<release>17</release>
+					<release>11</release>
+					<excludes>
+						<!-- the shared (spring6/hc5) factory; this module ships its own hc4 port -->
+						<exclude>org/cadenzaflow/bpm/extension/keycloak/KeycloakIdentityProviderFactory.java</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 		</plugins>

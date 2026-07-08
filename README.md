@@ -11,10 +11,16 @@ Provenance: fork of
 re-namespaced to `org.cadenzaflow` and built against the CadenzaFlow engine.
 Differences from upstream:
 
-* **Java 11 dependency line** — spring-web 5.3.x + httpclient 4.x (upstream is
-  Java 17 / spring-web 6 / httpclient5), so the plugin runs on every runtime
-  the CadenzaFlow engine supports. Only `KeycloakIdentityProviderFactory`'s
-  HTTP wiring changed for this; everything else is a mechanical re-namespace.
+* **Two dependency lines, one codebase** (the CadenzaFlow engine supports
+  JDK 11, upstream CIB seven is Java-17-only):
+
+  | Artifact | HTTP stack | Java | Use in |
+  |---|---|---|---|
+  | `cadenzaflow-keycloak` | spring-web 6 / httpclient5 (upstream code untouched) | 17 | Run, Spring Boot starter, jakarta environments |
+  | `cadenzaflow-keycloak-java11` | spring-web 5.3 / httpclient 4 | 11 | javax Tomcat distribution |
+
+  The two differ in exactly ONE class (`KeycloakIdentityProviderFactory`,
+  HTTP client wiring); all other sources are shared at build time.
 * Carries only the core `extension` module. Upstream's `extension-jwt` is NOT
   included — CadenzaFlow's engine-rest ships its own framework-free Bearer
   provider (see the platform's engine-rest README).
