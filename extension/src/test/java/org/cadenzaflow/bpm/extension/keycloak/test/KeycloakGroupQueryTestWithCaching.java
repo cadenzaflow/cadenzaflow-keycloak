@@ -87,7 +87,7 @@ public class KeycloakGroupQueryTestWithCaching extends AbstractKeycloakIdentityP
 
 		// validate result
 		assertEquals(GROUP_ID_ADMIN, group.getId());
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 		assertEquals("SYSTEM", group.getType());
 
 		// non cached query. http request count should have increased

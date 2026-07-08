@@ -58,7 +58,7 @@ public class KeycloakConfigureAdminGroupAndUsePathAsId extends AbstractKeycloakI
 	public void testAdminGroupConfiguration() {
 		// check engine configuration
 		List<String> camundaAdminGroups = ((ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration()).getAdminGroups();
-		assertEquals(2, camundaAdminGroups.size()); // camunda always adds "camunda-admin" as admin group ID - we want the other ID
+		assertEquals(2, camundaAdminGroups.size()); // camunda always adds "cadenzaflow-admin" as admin group ID - we want the other ID
 		String adminGroupId = camundaAdminGroups.stream().filter(g -> !Groups.CAMUNDA_ADMIN.equals(g)).findFirst().get();
 		
 		// check that authorizations have been created

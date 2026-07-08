@@ -13,7 +13,6 @@ import org.cadenzaflow.bpm.extension.keycloak.CacheableKeycloakGroupQuery;
 import org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin;
 import org.cadenzaflow.bpm.extension.keycloak.test.util.CacheAwareKeycloakIdentityProviderPluginForTest;
 import org.cadenzaflow.bpm.extension.keycloak.test.util.CountingHttpRequestInterceptor;
-import org.cadenzaflow.bpm.extension.keycloak.test.util.PredictableTicker;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,17 +20,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Tests group queries with caching enabled and cache duration configured
+ * Tests group queries with caching enabled and max size configured
  */
-public class KeycloakGroupQueryTestWithCachingAndCustomCacheExpiry extends AbstractKeycloakIdentityProviderTest {
+public class KeycloakGroupQueryTestWithCachingAndMaxSize extends AbstractKeycloakIdentityProviderTest {
 
 	public static Test suite() {
-		return new TestSetup(new TestSuite(KeycloakGroupQueryTestWithCachingAndCustomCacheExpiry.class)) {
+		return new TestSetup(new TestSuite(KeycloakGroupQueryTestWithCachingAndMaxSize.class)) {
 
 			// @BeforeClass
 			protected void setUp() throws Exception {
 				ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
-								.createProcessEngineConfigurationFromResource("camunda.enableCachingAndConfigureCacheDuration.cfg.xml");
+								.createProcessEngineConfigurationFromResource("camunda.enableCachingAndConfigureMaxCacheSize.cfg.xml");
 				configureKeycloakIdentityProviderPlugin(config);
 				PluggableProcessEngineTestCase.cachedProcessEngine = config.buildProcessEngine();
 			}
@@ -52,7 +51,6 @@ public class KeycloakGroupQueryTestWithCachingAndCustomCacheExpiry extends Abstr
 			processEngine.getAuthorizationService().deleteAuthorization(a.getId());
 		});
 		this.clearCache();
-		PredictableTicker.reset();
 		CountingHttpRequestInterceptor.resetCount();
 	}
 
@@ -71,53 +69,63 @@ public class KeycloakGroupQueryTestWithCachingAndCustomCacheExpiry extends Abstr
 	// Test configuration
 	// ------------------------------------------------------------------------
 
-	public void testCacheEntriesEvictedWhenCacheTimeoutIsReached() {
+	public void testCacheEntriesEvictedWhenMaxSizeIsReached() {
 
 		GroupQuery query = identityService.createGroupQuery();
 
-		// query camunda-admin at time = 0
-		assertEquals("camunda-admin", queryGroup(query, "camunda-admin").getName());
+		int countBefore = CountingHttpRequestInterceptor.getHttpRequestCount();
 
-		// cache contains only camunda-admin at this point
-		assertEquals(Collections.singletonList("camunda-admin"), getCacheEntries());
+		assertEquals(0, countBefore);
 
-		// move clock by 2 minutes
-		PredictableTicker.moveTimeForwardByMinutes(2);
+		assertEquals("cadenzaflow-admin", queryGroup(query, "cadenzaflow-admin").getName());
 
-		// query cam-read-only after 2 minutes
+		// cadenzaflow-admin has not been queried before so http call count should increase by 1
+		assertEquals(countBefore + 1, CountingHttpRequestInterceptor.getHttpRequestCount());
+
+		// cache contains only cadenzaflow-admin at this point
+		assertEquals(Collections.singletonList("cadenzaflow-admin"), getCacheEntries());
+
 		assertEquals("cam-read-only", queryGroup(query, "cam-read-only").getName());
 
-		// cache contains cam-read-only and camunda-admin
-		assertEquals(Arrays.asList("cam-read-only", "camunda-admin"), getCacheEntries());
+		// cam-read-only has not been queried before so http call count should increase by 1
+		assertEquals(countBefore + 2, CountingHttpRequestInterceptor.getHttpRequestCount());
 
-		// move clock by another 2 minutes
-		PredictableTicker.moveTimeForwardByMinutes(2);
+		// cache contains cam-read-only and cadenzaflow-admin
+		assertEquals(Arrays.asList("cam-read-only", "cadenzaflow-admin"), getCacheEntries());
 
-		// cache still contains cam-read-only and camunda-admin
-		assertEquals(Arrays.asList("cam-read-only", "camunda-admin"), getCacheEntries());
+		assertEquals("cadenzaflow-admin", queryGroup(query, "cadenzaflow-admin").getName());
 
-		// move clock by another 2 minutes
-		PredictableTicker.moveTimeForwardByMinutes(2);
+		// cadenzaflow-admin has already been queried and is still in the cache so count stays same
+		assertEquals(countBefore + 2, CountingHttpRequestInterceptor.getHttpRequestCount());
 
-		// camunda-admin was evicted because eviction timeout (5 minutes) has been breached 
-		// it's been 6 minutes since camunda-admin was inserted into cache
-		assertEquals(Collections.singletonList("cam-read-only"), getCacheEntries());
+		// cache still contains cam-read-only and cadenzaflow-admin
+		assertEquals(Arrays.asList("cam-read-only", "cadenzaflow-admin"), getCacheEntries());
 
-		// move clock by another 5 minutes
-		PredictableTicker.moveTimeForwardByMinutes(5);
+		assertEquals("manager", queryGroup(query, "manager").getName());
 
-		// cache is empty. cam-read-only has also been evicted
-		assertEquals(Collections.emptyList(), getCacheEntries());
+		// manager has not been queried before so http call count should increase by 1
+		assertEquals(countBefore + 3, CountingHttpRequestInterceptor.getHttpRequestCount());
+
+		// cam-read-only was evicted because maxSize(2) was breached and it was used fewer times than cadenzaflow-admin
+		assertEquals(Arrays.asList("cadenzaflow-admin", "manager"), getCacheEntries());
+
+		// query cam-read-only again
+		assertEquals("cam-read-only", queryGroup(query, "cam-read-only").getName());
+
+		// count should increase because cam-read-only was removed from cache before the query
+		assertEquals(countBefore + 4, CountingHttpRequestInterceptor.getHttpRequestCount());
+
+		// manager was evicted because it was used fewer times than cadenzaflow-admin
+		assertEquals(Arrays.asList("cam-read-only", "cadenzaflow-admin"), getCacheEntries());
 	}
 
 	private static Group queryGroup(GroupQuery query, String groupName) {
 		Group group = query.groupName(groupName).singleResult();
-		processPendingCacheEvictions();
+		CacheAwareKeycloakIdentityProviderPluginForTest.groupQueryCache.cleanUp();
 		return group;
 	}
 
 	private static List<String> getCacheEntries() {
-		processPendingCacheEvictions();
 		return CacheAwareKeycloakIdentityProviderPluginForTest.groupQueryCache
 						.asMap()
 						.keySet()
@@ -125,9 +133,5 @@ public class KeycloakGroupQueryTestWithCachingAndCustomCacheExpiry extends Abstr
 						.map(CacheableKeycloakGroupQuery::getName)
 						.sorted()
 						.collect(Collectors.toList());
-	}
-
-	private static void processPendingCacheEvictions() {
-		CacheAwareKeycloakIdentityProviderPluginForTest.groupQueryCache.cleanUp();
 	}
 }

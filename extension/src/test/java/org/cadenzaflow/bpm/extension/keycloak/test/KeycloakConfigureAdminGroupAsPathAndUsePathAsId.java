@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.cadenzaflow.bpm.engine.ProcessEngineConfiguration;
 import org.cadenzaflow.bpm.engine.authorization.Authorization;
+import org.cadenzaflow.bpm.engine.authorization.Groups;
 import org.cadenzaflow.bpm.engine.authorization.Permissions;
 import org.cadenzaflow.bpm.engine.authorization.Resources;
 import org.cadenzaflow.bpm.engine.identity.Group;
@@ -16,19 +17,19 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 /**
- * Admin user configuration test for the Keycloak identity provider.
- * Use Keycloak internal ID as administratorUserId and flag useUsernameAsCamundaUserId enabled.
+ * Admin group configuration test for the Keycloak identity provider.
+ * Use group path in configuration and flag useGroupPathAsCamundaGroupId enabled.
  */
-public class KeycloakConfigureAdminUserIdAndUseUsernameAsIdTest extends AbstractKeycloakIdentityProviderTest {
+public class KeycloakConfigureAdminGroupAsPathAndUsePathAsId extends AbstractKeycloakIdentityProviderTest {
 
 	public static Test suite() {
-	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAndUseUsernameAsIdTest.class)) {
+	    return new TestSetup(new TestSuite(KeycloakConfigureAdminGroupAsPathAndUsePathAsId.class)) {
 
 	    	// @BeforeClass
 	        protected void setUp() throws Exception {
 	    		ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
-	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAndUseUsernameAsId.cfg.xml");
-	    		configureKeycloakIdentityProviderPlugin(config).setAdministratorUserId(USER_ID_CAMUNDA_ADMIN);
+	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminGroupAsPathAndUsePathAsId.cfg.xml");
+	    		configureKeycloakIdentityProviderPlugin(config);
 	    		PluggableProcessEngineTestCase.cachedProcessEngine = config.buildProcessEngine();
 	        }
 	        
@@ -52,37 +53,41 @@ public class KeycloakConfigureAdminUserIdAndUseUsernameAsIdTest extends Abstract
 	// ------------------------------------------------------------------------
 	// Test configuration
 	// ------------------------------------------------------------------------
-	
 
-	public void testAdminUserConfiguration() {
+	public void testAdminGroupConfiguration() {
 		// check engine configuration
-		List<String> camundaAdminUsers = ((ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration()).getAdminUsers();
-		assertEquals(1, camundaAdminUsers.size());
-		String adminUserId = camundaAdminUsers.get(0);
-		assertEquals("camunda", adminUserId);
+		List<String> camundaAdminGroups = ((ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration()).getAdminGroups();
+		assertEquals(2, camundaAdminGroups.size()); // camunda always adds "cadenzaflow-admin" as admin group ID - we want the other ID
+		String adminGroupId = camundaAdminGroups.stream().filter(g -> !Groups.CAMUNDA_ADMIN.equals(g)).findFirst().get();
 		
 		// check that authorizations have been created
 		assertTrue(processEngine.getAuthorizationService().createAuthorizationQuery()
-				.userIdIn(adminUserId).count() > 0);
+				.groupIdIn(adminGroupId).count() > 0);
 		
 		// check sample authorization for applications
 		assertEquals(1, processEngine.getAuthorizationService().createAuthorizationQuery()
-				.userIdIn(adminUserId)
+				.groupIdIn(adminGroupId)
 				.resourceType(Resources.APPLICATION)
 				.resourceId(Authorization.ANY)
 				.hasPermission(Permissions.ALL)
 				.count());
 
 		// query user data
-		User user = processEngine.getIdentityService().createUserQuery().userId(adminUserId).singleResult();
+		User user = processEngine.getIdentityService().createUserQuery().memberOfGroup(adminGroupId).singleResult();
 		assertNotNull(user);
-		assertEquals("camunda", user.getId());
-		assertEquals("camunda@accso.de", user.getEmail());
+		assertEquals("johnfoo@gmail.com", user.getEmail());
 		
 		// query groups
-		Group group = processEngine.getIdentityService().createGroupQuery().groupMember(adminUserId).singleResult();
+		Group group = processEngine.getIdentityService().createGroupQuery().groupId(adminGroupId).singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("root/child2", group.getId());
+		assertEquals("child2", group.getName());
+
+		// query groups using group member
+		List<Group> groups = processEngine.getIdentityService().createGroupQuery().groupMember(user.getId()).list();
+		assertNotNull(groups);
+		assertEquals("Wrong number of groups for admin", 2, groups.size());
+		
 	}
 
 }

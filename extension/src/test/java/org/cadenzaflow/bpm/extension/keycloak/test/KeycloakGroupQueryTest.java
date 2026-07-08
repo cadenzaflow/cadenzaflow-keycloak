@@ -51,7 +51,7 @@ public class KeycloakGroupQueryTest extends AbstractKeycloakIdentityProviderTest
 
 		// validate result
 		assertEquals(GROUP_ID_ADMIN, group.getId());
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 		assertEquals("SYSTEM", group.getType());
 
 		group = identityService.createGroupQuery().groupId("whatever").singleResult();
@@ -102,7 +102,7 @@ public class KeycloakGroupQueryTest extends AbstractKeycloakIdentityProviderTest
 
 		assertEquals(2, groups.size());
 		for (Group group : groups) {
-			if (!group.getName().equals("camunda-admin") && !group.getName().equals("manager")) {
+			if (!group.getName().equals("cadenzaflow-admin") && !group.getName().equals("manager")) {
 				fail();
 			}
 		}
@@ -130,7 +130,7 @@ public class KeycloakGroupQueryTest extends AbstractKeycloakIdentityProviderTest
 						.groupType("SYSTEM")
 						.singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 	public void testFilterByGroupIdInAndUserId() {
@@ -139,7 +139,7 @@ public class KeycloakGroupQueryTest extends AbstractKeycloakIdentityProviderTest
 						.groupMember("camunda@accso.de")
 						.singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 	public void testFilterByGroupName() {

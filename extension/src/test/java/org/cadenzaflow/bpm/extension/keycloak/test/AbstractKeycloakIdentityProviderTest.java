@@ -273,7 +273,7 @@ public abstract class AbstractKeycloakIdentityProviderTest extends PluggableProc
 		CLIENT_SECRET = createClient(headers, realm, "camunda-identity-service", "http://localhost:8080/login");
 
 		// Create groups
-		GROUP_ID_ADMIN = createGroup(headers, realm, "camunda-admin", true);
+		GROUP_ID_ADMIN = createGroup(headers, realm, "cadenzaflow-admin", true);
 		GROUP_ID_TEAMLEAD = createGroup(headers, realm, "teamlead", false);
 		GROUP_ID_MANAGER = createGroup(headers, realm, "manager", false);
 		GROUP_ID_SYSTEM_READONLY = createGroup(headers, realm, "cam-read-only", true);

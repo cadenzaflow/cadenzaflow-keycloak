@@ -42,12 +42,12 @@ public class KeycloakUseGroupPathdAsGroupIdQueryTest extends AbstractKeycloakIde
 	// ------------------------------------------------------------------------
 	
 	public void testFilterByGroupId() {
-		Group group = identityService.createGroupQuery().groupId("camunda-admin").singleResult();
+		Group group = identityService.createGroupQuery().groupId("cadenzaflow-admin").singleResult();
 		assertNotNull(group);
 
 		// validate result
-		assertEquals("camunda-admin", group.getId());
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getId());
+		assertEquals("cadenzaflow-admin", group.getName());
 		assertEquals("SYSTEM", group.getType());
 
 		group = identityService.createGroupQuery().groupId("whatever").singleResult();
@@ -93,12 +93,12 @@ public class KeycloakUseGroupPathdAsGroupIdQueryTest extends AbstractKeycloakIde
 	
 	public void testFilterByGroupIdIn() {
 		List<Group> groups = identityService.createGroupQuery()
-				.groupIdIn("camunda-admin", "manager")
+				.groupIdIn("cadenzaflow-admin", "manager")
 				.list();
 
 		assertEquals(2, groups.size());
 		for (Group group : groups) {
-			if (!group.getName().equals("camunda-admin") && !group.getName().equals("manager")) {
+			if (!group.getName().equals("cadenzaflow-admin") && !group.getName().equals("manager")) {
 				fail();
 			}
 		}
@@ -119,27 +119,27 @@ public class KeycloakUseGroupPathdAsGroupIdQueryTest extends AbstractKeycloakIde
 
 	public void testFilterByGroupIdInAndType() {
 		Group group = identityService.createGroupQuery()
-				.groupIdIn("camunda-admin", "manager")
+				.groupIdIn("cadenzaflow-admin", "manager")
 				.groupType("WORKFLOW")
 				.singleResult();
 		assertNotNull(group);
 		assertEquals("manager", group.getName());
 		
 		group = identityService.createGroupQuery()
-				.groupIdIn("camunda-admin", "manager")
+				.groupIdIn("cadenzaflow-admin", "manager")
 				.groupType("SYSTEM")
 				.singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 	public void testFilterByGroupIdInAndUserId() {
 		Group group = identityService.createGroupQuery()
-				.groupIdIn("camunda-admin", "manager")
+				.groupIdIn("cadenzaflow-admin", "manager")
 				.groupMember("camunda@accso.de")
 				.singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 	
 	public void testFilterByGroupName() {

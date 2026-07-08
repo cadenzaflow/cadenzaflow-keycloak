@@ -80,7 +80,7 @@ public class KeycloakConfigureAdminUserIdTest extends AbstractKeycloakIdentityPr
 		// query groups
 		Group group = processEngine.getIdentityService().createGroupQuery().groupMember(adminUserId).singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 }

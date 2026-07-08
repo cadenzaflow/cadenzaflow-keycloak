@@ -17,18 +17,18 @@ import junit.framework.TestSuite;
 
 /**
  * Admin user configuration test for the Keycloak identity provider.
- * Use username as administratorUserId.
+ * Use Keycloak internal ID as administratorUserId and flag useUsernameAsCamundaUserId enabled.
  */
-public class KeycloakConfigureAdminUserIdAsUsernameTest extends AbstractKeycloakIdentityProviderTest {
+public class KeycloakConfigureAdminUserIdAndUseUsernameAsIdTest extends AbstractKeycloakIdentityProviderTest {
 
 	public static Test suite() {
-	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAsUsernameTest.class)) {
+	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAndUseUsernameAsIdTest.class)) {
 
 	    	// @BeforeClass
 	        protected void setUp() throws Exception {
 	    		ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
-	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAsUsername.cfg.xml");
-	    		configureKeycloakIdentityProviderPlugin(config);
+	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAndUseUsernameAsId.cfg.xml");
+	    		configureKeycloakIdentityProviderPlugin(config).setAdministratorUserId(USER_ID_CAMUNDA_ADMIN);
 	    		PluggableProcessEngineTestCase.cachedProcessEngine = config.buildProcessEngine();
 	        }
 	        
@@ -52,12 +52,14 @@ public class KeycloakConfigureAdminUserIdAsUsernameTest extends AbstractKeycloak
 	// ------------------------------------------------------------------------
 	// Test configuration
 	// ------------------------------------------------------------------------
+	
 
 	public void testAdminUserConfiguration() {
 		// check engine configuration
 		List<String> camundaAdminUsers = ((ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration()).getAdminUsers();
 		assertEquals(1, camundaAdminUsers.size());
 		String adminUserId = camundaAdminUsers.get(0);
+		assertEquals("camunda", adminUserId);
 		
 		// check that authorizations have been created
 		assertTrue(processEngine.getAuthorizationService().createAuthorizationQuery()
@@ -74,12 +76,13 @@ public class KeycloakConfigureAdminUserIdAsUsernameTest extends AbstractKeycloak
 		// query user data
 		User user = processEngine.getIdentityService().createUserQuery().userId(adminUserId).singleResult();
 		assertNotNull(user);
+		assertEquals("camunda", user.getId());
 		assertEquals("camunda@accso.de", user.getEmail());
 		
 		// query groups
 		Group group = processEngine.getIdentityService().createGroupQuery().groupMember(adminUserId).singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 }

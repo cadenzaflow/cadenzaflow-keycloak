@@ -36,6 +36,14 @@
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.gson>2.11.0</version.gson>
     <version.caffeine>3.1.8</version.caffeine>
+
+    <!-- test stack (primary extension module only) -->
+    <version.h2>2.3.232</version.h2>
+    <version.awaitility>4.3.0</version.awaitility>
+    <!-- Keycloak Testcontainer version must match the Testcontainers version
+         it brings in transitively, see
+         https://github.com/dasniko/testcontainers-keycloak/blob/main/docs/versions.md -->
+    <version.testcontainers-keycloak>4.1.1</version.testcontainers-keycloak>
   </properties>
 
   <modules>
@@ -71,6 +79,30 @@
         <groupId>com.github.ben-manes.caffeine</groupId>
         <artifactId>caffeine</artifactId>
         <version>${version.caffeine}</version>
+      </dependency>
+
+      <!-- test dependencies (used by the primary extension module; the
+           spring-boot starter-test line is Boot 3.5 / spring 6, matching the
+           primary module - do NOT add it to the java11 module) -->
+      <dependency>
+        <groupId>org.cadenzaflow.bpm.springboot</groupId>
+        <artifactId>cadenzaflow-bpm-spring-boot-starter-test</artifactId>
+        <version>${version.cadenzaflow}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${version.h2}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${version.awaitility}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.dasniko</groupId>
+        <artifactId>testcontainers-keycloak</artifactId>
+        <version>${version.testcontainers-keycloak}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

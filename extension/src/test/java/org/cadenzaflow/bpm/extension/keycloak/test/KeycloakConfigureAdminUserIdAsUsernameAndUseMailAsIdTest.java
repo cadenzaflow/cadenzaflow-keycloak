@@ -17,17 +17,17 @@ import junit.framework.TestSuite;
 
 /**
  * Admin user configuration test for the Keycloak identity provider.
- * Use username as administratorUserId and flag useUsernameAsCamundaUserId enabled.
+ * Use username as administratorUserId and flag useEmailAsCamundaUserId enabled.
  */
-public class KeycloakConfigureAdminUserIdAsUsernameAndUseUsernameAsIdTest extends AbstractKeycloakIdentityProviderTest {
+public class KeycloakConfigureAdminUserIdAsUsernameAndUseMailAsIdTest extends AbstractKeycloakIdentityProviderTest {
 
 	public static Test suite() {
-	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAsUsernameAndUseUsernameAsIdTest.class)) {
+	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAsUsernameAndUseMailAsIdTest.class)) {
 
 	    	// @BeforeClass
 	        protected void setUp() throws Exception {
 	    		ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
-	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAsUsernameAndUseUsernameAsId.cfg.xml");
+	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAsUsernameAndUseMailAsId.cfg.xml");
 	    		configureKeycloakIdentityProviderPlugin(config);
 	    		PluggableProcessEngineTestCase.cachedProcessEngine = config.buildProcessEngine();
 	        }
@@ -58,7 +58,7 @@ public class KeycloakConfigureAdminUserIdAsUsernameAndUseUsernameAsIdTest extend
 		List<String> camundaAdminUsers = ((ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration()).getAdminUsers();
 		assertEquals(1, camundaAdminUsers.size());
 		String adminUserId = camundaAdminUsers.get(0);
-		assertEquals("camunda", adminUserId);
+		assertEquals("camunda@accso.de", adminUserId);
 		
 		// check that authorizations have been created
 		assertTrue(processEngine.getAuthorizationService().createAuthorizationQuery()
@@ -75,13 +75,12 @@ public class KeycloakConfigureAdminUserIdAsUsernameAndUseUsernameAsIdTest extend
 		// query user data
 		User user = processEngine.getIdentityService().createUserQuery().userId(adminUserId).singleResult();
 		assertNotNull(user);
-		assertEquals("camunda", user.getId());
 		assertEquals("camunda@accso.de", user.getEmail());
 		
 		// query groups
 		Group group = processEngine.getIdentityService().createGroupQuery().groupMember(adminUserId).singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 }

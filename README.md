@@ -24,8 +24,11 @@ Differences from upstream:
 * Carries only the core `extension` module. Upstream's `extension-jwt` is NOT
   included — CadenzaFlow's engine-rest ships its own framework-free Bearer
   provider (see the platform's engine-rest README).
-* The upstream test suite is parked under `extension/upstream-tests/` until it
-  is migrated to the CadenzaFlow spring-boot starter-test.
+* The upstream test suite runs against the primary module
+  (`extension/src/test/`), wired to `cadenzaflow-bpm-spring-boot-starter-test`.
+  It needs a running Keycloak — see "Maven test setup" below. The `-java11`
+  module has no own tests (it differs in one class; the shared sources are
+  covered by the primary suite).
 
 The configuration reference below is inherited from upstream and still applies
 (property names are unchanged); ignore sections about modules this fork does

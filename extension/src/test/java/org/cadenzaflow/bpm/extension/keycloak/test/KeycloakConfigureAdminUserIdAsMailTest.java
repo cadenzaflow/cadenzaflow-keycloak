@@ -17,18 +17,18 @@ import junit.framework.TestSuite;
 
 /**
  * Admin user configuration test for the Keycloak identity provider.
- * Use Keycloak internal ID as administratorUserId and flag useEmailAsCamundaUserId enabled.
+ * Use email as administratorUserId and flag useEmailAsCamundaUserId enabled.
  */
-public class KeycloakConfigureAdminUserIdAndUseMailAsIdTest extends AbstractKeycloakIdentityProviderTest {
+public class KeycloakConfigureAdminUserIdAsMailTest extends AbstractKeycloakIdentityProviderTest {
 
 	public static Test suite() {
-	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAndUseMailAsIdTest.class)) {
+	    return new TestSetup(new TestSuite(KeycloakConfigureAdminUserIdAsMailTest.class)) {
 
 	    	// @BeforeClass
 	        protected void setUp() throws Exception {
 	    		ProcessEngineConfigurationImpl config = (ProcessEngineConfigurationImpl) ProcessEngineConfiguration
-	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAndUseMailAsId.cfg.xml");
-	    		configureKeycloakIdentityProviderPlugin(config).setAdministratorUserId(USER_ID_CAMUNDA_ADMIN);
+	    				.createProcessEngineConfigurationFromResource("camunda.configureAdminUserIdAsMail.cfg.xml");
+	    		configureKeycloakIdentityProviderPlugin(config);
 	    		PluggableProcessEngineTestCase.cachedProcessEngine = config.buildProcessEngine();
 	        }
 	        
@@ -52,7 +52,6 @@ public class KeycloakConfigureAdminUserIdAndUseMailAsIdTest extends AbstractKeyc
 	// ------------------------------------------------------------------------
 	// Test configuration
 	// ------------------------------------------------------------------------
-	
 
 	public void testAdminUserConfiguration() {
 		// check engine configuration
@@ -76,13 +75,12 @@ public class KeycloakConfigureAdminUserIdAndUseMailAsIdTest extends AbstractKeyc
 		// query user data
 		User user = processEngine.getIdentityService().createUserQuery().userId(adminUserId).singleResult();
 		assertNotNull(user);
-		assertEquals("camunda@accso.de", user.getId());
 		assertEquals("camunda@accso.de", user.getEmail());
 		
 		// query groups
 		Group group = processEngine.getIdentityService().createGroupQuery().groupMember(adminUserId).singleResult();
 		assertNotNull(group);
-		assertEquals("camunda-admin", group.getName());
+		assertEquals("cadenzaflow-admin", group.getName());
 	}
 
 }
