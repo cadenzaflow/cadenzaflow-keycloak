@@ -77,8 +77,11 @@ jobs:
           if [ "${SKIP_TESTS}" = "true" ]; then
             SKIP_FLAG="-DskipTests"
           fi
+          # NOTE: maven-deploy-plugin 3.x syntax is "id::url" (two segments).
+          # The legacy "id::default::url" form parses the server id as
+          # "id::default" -> credentials lookup misses -> anonymous PUT -> 401.
           mvn -B deploy \
-            -DaltDeploymentRepository="${NEXUS_REPO_ID}::default::${NEXUS_URL}" \
+            -DaltDeploymentRepository="${NEXUS_REPO_ID}::${NEXUS_URL}" \
             ${SKIP_FLAG}
 
       - name: Deploy summary
