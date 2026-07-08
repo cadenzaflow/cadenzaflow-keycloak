@@ -72,6 +72,11 @@ jobs:
       - name: Maven deploy
         env:
           SKIP_TESTS: ${{ inputs.skip_tests || 'true' }}
+          # settings.xml references ${env.NEXUS_*} - Maven resolves these at
+          # RUN time, so the secrets must be in THIS step's env, not (only)
+          # in the step that wrote the file.
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
           SKIP_FLAG=""
           if [ "${SKIP_TESTS}" = "true" ]; then
