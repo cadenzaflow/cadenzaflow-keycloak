@@ -30,6 +30,97 @@ Differences from upstream:
   module has no own tests (it differs in one class; the shared sources are
   covered by the primary suite).
 
+## Installing on CadenzaFlow
+
+### CadenzaFlow Run (validated end-to-end)
+
+1. Copy the **primary** artifact and its dependencies that Run does not ship
+   into `configuration/userlib/` (spring-web 6 is already on Run's classpath):
+
+   ```
+   cadenzaflow-keycloak-<version>.jar
+   httpclient5-5.4.1.jar
+   httpcore5-5.3.4.jar
+   httpcore5-h2-5.3.4.jar
+   gson-2.11.0.jar
+   caffeine-3.1.8.jar
+   commons-codec-1.17.1.jar
+   ```
+
+2. Register the plugin in `configuration/default.yml` (or `production.yml`):
+
+   ```yaml
+   cadenzaflow.bpm:
+     run:
+       process-engine-plugins:
+         - plugin-class: org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin
+           plugin-parameters:
+             keycloakIssuerUrl: https://<keycloak>/realms/<realm>
+             keycloakAdminUrl:  https://<keycloak>/admin/realms/<realm>
+             clientId: <client>
+             clientSecret: <secret>
+             useUsernameAsCamundaUserId: true
+             administratorGroupName: cadenzaflow-admin
+   ```
+
+3. Name the Keycloak admin group **`cadenzaflow-admin`** if you can: that
+   exact name is the engine's built-in admin group constant, so the plugin
+   types it SYSTEM even on Keycloak endpoints that return brief
+   representations (where a `type` group attribute is invisible). Any other
+   name still works via `administratorGroupName`.
+
+4. If you enable engine authorization (so the plugin seeds ADMIN
+   authorization rows for the group), use the **first-class property**:
+
+   ```yaml
+   cadenzaflow.bpm.authorization.enabled: true
+   ```
+
+   Do NOT use `generic-properties.properties.authorization-enabled` — the
+   starter's `DefaultAuthorizationConfiguration` runs later and silently
+   overwrites it with the default (`false`).
+
+### Apache Tomcat (javax distribution)
+
+Use the **`cadenzaflow-keycloak-java11`** artifact. Copy into the Tomcat
+distribution's `lib/` folder:
+
+```
+cadenzaflow-keycloak-java11-<version>.jar
+spring-web-5.3.39.jar
+spring-core-5.3.39.jar
+spring-beans-5.3.39.jar
+spring-jcl-5.3.39.jar
+httpclient-4.5.14.jar
+httpcore-4.4.16.jar
+gson-2.11.0.jar
+caffeine-3.1.8.jar
+commons-codec-1.17.1.jar
+```
+
+and register the plugin in `conf/bpm-platform.xml`:
+
+```xml
+<plugin>
+  <class>org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin</class>
+  <properties>
+    <property name="keycloakIssuerUrl">https://&lt;keycloak&gt;/realms/&lt;realm&gt;</property>
+    <property name="keycloakAdminUrl">https://&lt;keycloak&gt;/admin/realms/&lt;realm&gt;</property>
+    <property name="clientId">&lt;client&gt;</property>
+    <property name="clientSecret">&lt;secret&gt;</property>
+    <property name="useUsernameAsCamundaUserId">true</property>
+    <property name="administratorGroupName">cadenzaflow-admin</property>
+  </properties>
+</plugin>
+```
+
+Note: the Run path above is validated against a live Keycloak (identity
+federation, login redirect, admin authorization seeding). The Tomcat path
+compiles and shares all but one class with the validated line, but has not
+been exercised end-to-end yet.
+
+---
+
 The configuration reference below is inherited from upstream and still applies
 (property names are unchanged); ignore sections about modules this fork does
 not carry.
