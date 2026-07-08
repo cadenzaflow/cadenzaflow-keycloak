@@ -1,6 +1,35 @@
+# cadenzaflow-keycloak
+
+**CadenzaFlow Identity Provider Plugin for Keycloak** — lets the engine read
+users and groups from Keycloak (read-only identity federation) so webapps and
+REST share one identity source.
+
+Provenance: fork of
+[cibseven-keycloak](https://github.com/cibseven-community-hub/cibseven-keycloak)
+(the maintained continuation of the EOL
+[camunda-platform-7-keycloak](https://github.com/camunda-community-hub/camunda-platform-7-keycloak)),
+re-namespaced to `org.cadenzaflow` and built against the CadenzaFlow engine.
+Differences from upstream:
+
+* **Java 11 dependency line** — spring-web 5.3.x + httpclient 4.x (upstream is
+  Java 17 / spring-web 6 / httpclient5), so the plugin runs on every runtime
+  the CadenzaFlow engine supports. Only `KeycloakIdentityProviderFactory`'s
+  HTTP wiring changed for this; everything else is a mechanical re-namespace.
+* Carries only the core `extension` module. Upstream's `extension-jwt` is NOT
+  included — CadenzaFlow's engine-rest ships its own framework-free Bearer
+  provider (see the platform's engine-rest README).
+* The upstream test suite is parked under `extension/upstream-tests/` until it
+  is migrated to the CadenzaFlow spring-boot starter-test.
+
+The configuration reference below is inherited from upstream and still applies
+(property names are unchanged); ignore sections about modules this fork does
+not carry.
+
+---
+
 # CIB seven - Keycloak Identity Provider Plugin
 [![CIB seven 2.1.0](https://img.shields.io/badge/CIB%20seven-2.1.0-orange.svg)](https://docs.cibseven.org/manual/2.1/)
-[![Maven Central](https://img.shields.io/maven-central/v/org.cibseven.bpm.extension/cibseven-keycloak?label=Maven%20Central)](https://central.sonatype.com/artifact/org.cibseven.bpm.extension/cibseven-keycloak)
+[![Maven Central](https://img.shields.io/maven-central/v/org.cadenzaflow.bpm.extension/cadenzaflow-keycloak?label=Maven%20Central)](https://central.sonatype.com/artifact/org.cadenzaflow.bpm.extension/cadenzaflow-keycloak)
  [![Apache License V.2](https://img.shields.io/badge/license-Apache%20V.2-blue.svg)](./LICENSE)
 
 ![Keycloak](doc/keycloak.png "https://www.keycloak.org/") 
@@ -56,8 +85,8 @@ Known limitations:
 Maven Dependencies:
 ```xml
 <dependency>
-    <groupId>org.cibseven.bpm.extension</groupId>
-    <artifactId>cibseven-keycloak</artifactId>
+    <groupId>org.cadenzaflow.bpm.extension</groupId>
+    <artifactId>cadenzaflow-keycloak</artifactId>
     <version>2.1.0</version>
 </dependency>
 ```
@@ -69,7 +98,7 @@ package <your-package>;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-import org.cibseven.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin;
+import org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin;
 
 @Component
 @ConfigurationProperties(prefix="plugin.identity.keycloak")
@@ -171,7 +200,7 @@ The CIB seven webclient manages SSO by its own, so we only need to configure the
 ```yml
   cibseven.webclient:
     user:
-      provider: org.cibseven.webapp.auth.KeycloakUserProvider # 1
+      provider: org.cadenzaflow.webapp.auth.KeycloakUserProvider # 1
     sso: # 2
       active: true
       endpoints:
@@ -298,7 +327,7 @@ public class WebAppSecurityConfig {
 
         FilterRegistrationBean filterRegistration = new FilterRegistrationBean();
         filterRegistration.setFilter(new ContainerBasedAuthenticationFilter());
-        filterRegistration.setInitParameters(Collections.singletonMap("authentication-provider", "org.cibseven.bpm.extension.keycloak.showcase.sso.KeycloakAuthenticationProvider"));
+        filterRegistration.setInitParameters(Collections.singletonMap("authentication-provider", "org.cadenzaflow.bpm.extension.keycloak.showcase.sso.KeycloakAuthenticationProvider"));
         filterRegistration.setOrder(201); // make sure the filter is registered after the Spring Security Filter Chain
         filterRegistration.addUrlPatterns(legacyWebappPath + "/app/*");
         return filterRegistration;
@@ -360,25 +389,25 @@ Keep in mind that Keycloak's `email` attribute might not always be unique, depen
 
 ## Quickstart
 
-As a quickstart into using and configuring the plugin we recommend to have a look at the [Installation on CIB seven Run](https://github.com/cibseven-community-hub/cibseven-keycloak/tree/master/examples/run). You'll find a chapter "Docker Sample Setup" at the end of the README. This is a simple starting point.
+As a quickstart into using and configuring the plugin we recommend to have a look at the [Installation on CIB seven Run](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/run). You'll find a chapter "Docker Sample Setup" at the end of the README. This is a simple starting point.
 
 If your intention is a complete SSO setup on Kubernetes you'll be more happy with the next reference.
 
 ## Sample Spring Boot Project with SSO on Kubernetes
 
-A sample project using this plugin including a basic SSO and Kubernetes setup can be found under [CIB seven Showcase for Spring Boot & Keycloak Identity Provider](https://github.com/cibseven-community-hub/cibseven-keycloak/tree/master/examples/sso-kubernetes). See directory `examples`.
+A sample project using this plugin including a basic SSO and Kubernetes setup can be found under [CIB seven Showcase for Spring Boot & Keycloak Identity Provider](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/sso-kubernetes). See directory `examples`.
 
 ## Installation on Apache Tomcat with Shared Process Engine
 
-Even if from an architectural point of view Spring Boot is currently the most recommended approach for cloud scenarios, it is of course possible to install the plugin in other CIB seven distributions as well. A description on how to install the plugin on an Apache Tomcat full distribution can be found under [Installation on Tomcat](https://github.com/cibseven-community-hub/cibseven-keycloak/tree/master/examples/tomcat). See directory `examples`.
+Even if from an architectural point of view Spring Boot is currently the most recommended approach for cloud scenarios, it is of course possible to install the plugin in other CIB seven distributions as well. A description on how to install the plugin on an Apache Tomcat full distribution can be found under [Installation on Tomcat](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/tomcat). See directory `examples`.
 
 ## Installation on CIB seven Run
 
-A description on how to install the plugin on CIB seven Run can be found under [Installation on CIB seven Run](https://github.com/cibseven-community-hub/cibseven-keycloak/tree/master/examples/run). See directory `examples`.
+A description on how to install the plugin on CIB seven Run can be found under [Installation on CIB seven Run](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/run). See directory `examples`.
 
 ## Installation on JBoss/Wildfly
 
-A description on how to install the plugin on a JBoss/Wildfly can be found under [Installation on JBoss/Wildfly](https://github.com/cibseven-community-hub/cibseven-keycloak/tree/master/examples/wildfly). See directory `examples`.
+A description on how to install the plugin on a JBoss/Wildfly can be found under [Installation on JBoss/Wildfly](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/wildfly). See directory `examples`.
 
 ## Unit testing the plugin
 
@@ -429,8 +458,8 @@ That's it. Have a happy Keycloak experience and focus on what really matters: th
 
 ## Resources
 
-* [Issue Tracker](https://github.com/cibseven-community-hub/cibseven-keycloak/issues)
-* [Contributing](https://github.com/cibseven-community-hub/cibseven-keycloak/blob/master/CONTRIBUTING.md)
+* [Issue Tracker](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/issues)
+* [Contributing](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/blob/master/CONTRIBUTING.md)
 
 ## Acknowledgement
 
