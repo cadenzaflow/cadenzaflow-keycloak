@@ -1,0 +1,93 @@
+name: Deploy to CadenzaFlow Nexus
+
+# Same pattern as the platform's nexus-deploy.yml: NEXUS_USERNAME/NEXUS_PASSWORD
+# org secrets + altDeploymentRepository. Tests are skipped by default because
+# the suite needs a live Keycloak (they run in build.yml on every push/PR).
+on:
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests during deploy'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+concurrency:
+  group: nexus-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NEXUS_REPO_ID: cadenzaflow-nexus
+  NEXUS_URL: https://nexus.cadenzaflow.com/repository/cadenzaflow-nexus
+
+jobs:
+  deploy:
+    name: Maven deploy to CadenzaFlow Nexus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Java setup
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      - name: Configure Maven settings.xml
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+        run: |
+          if [ -z "${NEXUS_USERNAME}" ] || [ -z "${NEXUS_PASSWORD}" ]; then
+            echo "::error::NEXUS_USERNAME or NEXUS_PASSWORD secret is missing."
+            exit 1
+          fi
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                                        http://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>cadenzaflow-nexus</id>
+                <username>${env.NEXUS_USERNAME}</username>
+                <password>${env.NEXUS_PASSWORD}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Show project version
+        run: mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout && echo
+
+      - name: Maven deploy
+        env:
+          SKIP_TESTS: ${{ inputs.skip_tests || 'true' }}
+        run: |
+          SKIP_FLAG=""
+          if [ "${SKIP_TESTS}" = "true" ]; then
+            SKIP_FLAG="-DskipTests"
+          fi
+          mvn -B deploy \
+            -DaltDeploymentRepository="${NEXUS_REPO_ID}::default::${NEXUS_URL}" \
+            ${SKIP_FLAG}
+
+      - name: Deploy summary
+        if: always()
+        run: |
+          {
+            echo "## Nexus Deploy Result"
+            echo ""
+            echo "- Repository: \`${NEXUS_URL}\`"
+            echo "- Ref: \`${GITHUB_REF}\`"
+            echo "- Status: \`${{ job.status }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
