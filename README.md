@@ -121,16 +121,126 @@ been exercised end-to-end yet.
 
 ---
 
-The configuration reference below is inherited from upstream and still applies
-(property names are unchanged); ignore sections about modules this fork does
-not carry.
+## Quickstart: CadenzaFlow Run + Keycloak SSO, end to end
+
+Goal: log into the CadenzaFlow webapps with a Keycloak user; users and groups
+come from Keycloak (nothing is created in the engine DB). Validated against
+Keycloak 26 and CadenzaFlow Run 1.2.0.
+
+### Step 1 — Keycloak
+
+1. Create a realm (example below uses `cadenzaflow`).
+2. Create a client `cadenzaflow-webapps`:
+   * Client authentication **ON** (confidential) — note the generated
+     **client secret** (Credentials tab)
+   * Standard flow (authorization code) enabled
+   * Service accounts roles **ON**
+   * Valid redirect URIs: `https://<run-host>/login/oauth2/code/keycloak`
+     (add the same value as a valid *post logout* redirect URI)
+   * Screenshots and Keycloak-version footnotes: see
+     "Prerequisites in your Keycloak realm" below.
+3. On the client's *Service accounts roles* tab assign the
+   `realm-management` roles `query-groups`, `query-users`, `view-users`
+   (this is what lets the plugin read users/groups).
+4. Create a group named **`cadenzaflow-admin`** and add your admin user to
+   it. Use that exact name if you can — it is the engine's built-in admin
+   group constant, so it is auto-typed SYSTEM everywhere.
+5. **If the browser and Run reach Keycloak via different URLs** (typical
+   with containers: browser uses a published URL, Run uses an internal
+   one), pin the issuer or logins fail with
+   `invalid_user_info_response`:
+
+   ```
+   KC_HOSTNAME: <browser-facing URL, e.g. https://keycloak.example.com>
+   KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+   ```
+
+### Step 2 — CadenzaFlow Run
+
+1. Put the plugin jars into `configuration/userlib/` — see
+   "Installing on CadenzaFlow" above.
+2. Merge this into `configuration/default.yml` (single Keycloak URL,
+   reachable by both browser and Run):
+
+   ```yaml
+   cadenzaflow.bpm:
+     # no admin-user block: identity is read-only via Keycloak;
+     # admin comes from administratorGroupName below
+     oauth2:
+       identity-provider:
+         enabled: false          # groups come from the engine plugin, not the OAuth2 principal
+     authorization:
+       enabled: true             # optional; NEVER via generic-properties (silently overwritten)
+     run:
+       process-engine-plugins:
+         - plugin-class: org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin
+           plugin-parameters:
+             keycloakIssuerUrl: https://keycloak.example.com/realms/cadenzaflow
+             keycloakAdminUrl:  https://keycloak.example.com/admin/realms/cadenzaflow
+             clientId: cadenzaflow-webapps
+             clientSecret: <secret>
+             useUsernameAsCamundaUserId: true
+             administratorGroupName: cadenzaflow-admin
+
+   spring.security.oauth2.client:
+     registration:
+       keycloak:
+         provider: keycloak
+         client-id: cadenzaflow-webapps
+         client-secret: <secret>
+         scope: openid,profile,email
+         authorization-grant-type: authorization_code
+     provider:
+       keycloak:
+         issuer-uri: https://keycloak.example.com/realms/cadenzaflow
+         user-name-attribute: preferred_username   # must match useUsernameAsCamundaUserId
+   ```
+
+   *Different URLs for browser vs Run?* Drop `issuer-uri`, set the four
+   endpoints (`authorization-uri` browser-facing; `token-uri`,
+   `jwk-set-uri`, `user-info-uri` internal) and set
+   `redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"` explicitly —
+   plus the `KC_HOSTNAME` pin from step 1.5.
+
+3. Start Run with the oauth2 module:
+
+   ```
+   start.sh --webapps --rest --oauth2
+   ```
+
+### Step 3 — Verify
+
+| Check | Expected |
+|---|---|
+| Open `https://<run>/cadenzaflow/app/cockpit/default/` | Redirect to the Keycloak login page |
+| Log in with the `cadenzaflow-admin` user | Back to Cockpit, dashboard renders; Admin webapp accessible |
+| `GET /engine-rest/group?member=<username>` | The user's Keycloak groups (engine DB stays empty) |
+| Boot log | `KEYCLOAK-01001 PLUGIN KeycloakIdentityProviderPlugin activated` and, with authorization on, one `KEYCLOAK-01002 GRANT group ...` line per resource |
+
+Common failures:
+
+| Symptom | Cause / fix |
+|---|---|
+| Login page shows, then bounces to `/login?error` | userinfo 401 — split-URL issuer mismatch → step 1.5 (`KC_HOSTNAME`) |
+| No authorization rows although enabled | flag set via `generic-properties` → use `cadenzaflow.bpm.authorization.enabled` |
+| Users/groups empty in Cockpit | service-account roles missing (step 1.3) or wrong `keycloakAdminUrl` |
+| Engine-rest with OIDC instead of Basic | that is a platform feature, not this plugin — see the `engine-rest` README (OIDC Bearer section) in cadenzaflow-bpm-platform |
 
 ---
 
-# CIB seven - Keycloak Identity Provider Plugin
-[![CIB seven 2.1.0](https://img.shields.io/badge/CIB%20seven-2.1.0-orange.svg)](https://docs.cibseven.org/manual/2.1/)
-[![Maven Central](https://img.shields.io/maven-central/v/org.cadenzaflow.bpm.extension/cadenzaflow-keycloak?label=Maven%20Central)](https://central.sonatype.com/artifact/org.cadenzaflow.bpm.extension/cadenzaflow-keycloak)
- [![Apache License V.2](https://img.shields.io/badge/license-Apache%20V.2-blue.svg)](./LICENSE)
+The configuration reference below is inherited from upstream and still applies
+(property names are unchanged — including the `...AsCamundaUserId` names);
+"CIB seven" in the text reads as "CadenzaFlow" for our purposes. Ignore
+sections about modules this fork does not carry.
+
+---
+
+# Keycloak Identity Provider Plugin — reference (from upstream cibseven-keycloak)
+[![Apache License V.2](https://img.shields.io/badge/license-Apache%20V.2-blue.svg)](./LICENSE)
+
+Artifacts are published to the CadenzaFlow Nexus
+(`https://nexus.cadenzaflow.com/repository/cadenzaflow-nexus`,
+groupId `org.cadenzaflow.bpm.extension`) — not to Maven Central.
 
 ![Keycloak](doc/keycloak.png "https://www.keycloak.org/") 
 
@@ -146,8 +256,8 @@ This plugin provides the basis for using Keycloak as Identity Management solutio
 **Beware: in case you want to use Keycloak's advanced login capabilities for social connections you must configure SSO as well.**
 Password grant exchanges are only supported for Keycloak's internally managed users and users of an LDAP / Keberos User federation. Hence without SSO you will only be able to login with users managed by such connections.
 
-Current version: `2.1.0`<br >
-Latest tests with: Keycloak `26.1.2`, `19.0.3-legacy`, CIB seven `2.1.0`
+Fork version: `1.0.0` (upstream base: cibseven-keycloak `2.1.0`)<br >
+Latest tests with: Keycloak `26.5.6`, CadenzaFlow `1.2.0` (131 tests in CI)
 
 #### Features
 Changes in version `2.0.0`
@@ -487,27 +597,15 @@ spring.security.oauth2:
 
 Keep in mind that Keycloak's `email` attribute might not always be unique, depending on your setup. Email uniqueness can be configured on a per realm level depending on the setting *Login with email*.
 
-## Quickstart
+## Installation and examples
 
-As a quickstart into using and configuring the plugin we recommend to have a look at the [Installation on CIB seven Run](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/run). You'll find a chapter "Docker Sample Setup" at the end of the README. This is a simple starting point.
-
-If your intention is a complete SSO setup on Kubernetes you'll be more happy with the next reference.
-
-## Sample Spring Boot Project with SSO on Kubernetes
-
-A sample project using this plugin including a basic SSO and Kubernetes setup can be found under [CIB seven Showcase for Spring Boot & Keycloak Identity Provider](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/sso-kubernetes). See directory `examples`.
-
-## Installation on Apache Tomcat with Shared Process Engine
-
-Even if from an architectural point of view Spring Boot is currently the most recommended approach for cloud scenarios, it is of course possible to install the plugin in other CIB seven distributions as well. A description on how to install the plugin on an Apache Tomcat full distribution can be found under [Installation on Tomcat](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/tomcat). See directory `examples`.
-
-## Installation on CIB seven Run
-
-A description on how to install the plugin on CIB seven Run can be found under [Installation on CIB seven Run](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/run). See directory `examples`.
-
-## Installation on JBoss/Wildfly
-
-A description on how to install the plugin on a JBoss/Wildfly can be found under [Installation on JBoss/Wildfly](https://github.com/cibseven-community-hub/cadenzaflow-keycloak/tree/master/examples/wildfly). See directory `examples`.
+Installation on CadenzaFlow Run and Apache Tomcat is covered by
+["Installing on CadenzaFlow"](#installing-on-cadenzaflow) and the
+[Quickstart](#quickstart-cadenzaflow-run--keycloak-sso-end-to-end) at the top
+of this README. This fork does not carry the upstream `examples/` directory
+(Run/Tomcat/Wildfly/Kubernetes walk-throughs); if you need those references,
+they live in the
+[upstream repository](https://github.com/cibseven-community-hub/cibseven-keycloak).
 
 ## Unit testing the plugin
 
