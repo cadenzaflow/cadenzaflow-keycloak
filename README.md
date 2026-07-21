@@ -127,6 +127,11 @@ Goal: log into the CadenzaFlow webapps with a Keycloak user; users and groups
 come from Keycloak (nothing is created in the engine DB). Validated against
 Keycloak 26 and CadenzaFlow Run 1.2.0.
 
+> How authentication, identity federation and authorization fit together —
+> including why **Keycloak groups (not token roles) drive permissions** and
+> how machine clients fit in — is explained in detail in
+> [doc/identity-and-authorization.md](doc/identity-and-authorization.md).
+
 ### Step 1 — Keycloak
 
 1. Create a realm (example below uses `cadenzaflow`).

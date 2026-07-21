@@ -56,6 +56,11 @@ permission" (stateless, no engine authorization tables), that is currently
 **not implemented** — talk to us with the concrete claim layout before
 building around that assumption.
 
+The full mechanics — request flows for browser and REST, how to grant
+permissions, machine clients via service accounts, and the roles-vs-groups
+rationale — are in
+[doc/identity-and-authorization.md](../../doc/identity-and-authorization.md).
+
 `engine-rest` in this example is open (no auth filter) to keep the demo
 simple. To protect it with the same Keycloak (Bearer tokens,
 `client_credentials`/`password` grants), enable the OIDC Bearer authentication
