@@ -67,7 +67,7 @@ group-based authorization then applies to REST calls.
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` | Official Run 1.2.0 tar.gz + plugin jar (CadenzaFlow Nexus) + its deps (Maven Central) + `config/default.yml` |
+| `Dockerfile` | Layers on the official [`cadenzaflow/cadenzaflow-bpm-platform:run-1.2.0`](https://hub.docker.com/r/cadenzaflow/cadenzaflow-bpm-platform) image: plugin jar (CadenzaFlow Nexus) + its deps (Maven Central) + `config/default.yml` + `--oauth2` |
 | `docker-compose.yml` | Keycloak 26 (demo realm auto-import, `KC_HOSTNAME` pinned) + the built image |
 | `config/default.yml` | The validated SSO recipe: oauth2 client (split-URL variant), plugin registration, `authorization.enabled` |
 | `realm/cadenzaflow-realm.json` | Demo realm: confidential client + service-account roles, `cadenzaflow-admin` group, demo users |
