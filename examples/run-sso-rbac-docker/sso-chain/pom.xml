@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.cadenzaflow.bpm.examples</groupId>
+  <artifactId>scoped-sso-chain</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <description>
+    Example glue: the starter-security oauth2 login chain, scoped to the
+    webapp surface via securityMatcher so it can coexist with a second
+    (any-request) SecurityFilterChain such as openid-rbac-security in the
+    same JVM. Prototype of the planned platform fix.
+  </description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>17</maven.compiler.release>
+    <version.cadenzaflow>1.2.0</version.cadenzaflow>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>cadenzaflow-nexus</id>
+      <url>https://nexus.cadenzaflow.com/repository/cadenzaflow-nexus</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- everything is on the Run classpath at runtime -->
+    <dependency>
+      <groupId>org.cadenzaflow.bpm.springboot</groupId>
+      <artifactId>cadenzaflow-bpm-spring-boot-starter</artifactId>
+      <version>${version.cadenzaflow}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cadenzaflow.bpm.springboot</groupId>
+      <artifactId>cadenzaflow-bpm-spring-boot-starter-security</artifactId>
+      <version>${version.cadenzaflow}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cadenzaflow.bpm.springboot</groupId>
+      <artifactId>cadenzaflow-bpm-spring-boot-starter-webapp</artifactId>
+      <version>${version.cadenzaflow}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cadenzaflow.bpm.springboot</groupId>
+      <artifactId>cadenzaflow-bpm-spring-boot-starter-rest</artifactId>
+      <version>${version.cadenzaflow}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cadenzaflow.bpm</groupId>
+      <artifactId>cadenzaflow-engine</artifactId>
+      <version>${version.cadenzaflow}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>

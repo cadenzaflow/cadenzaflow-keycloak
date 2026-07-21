@@ -13,38 +13,10 @@ services:
     volumes:
       - ./realm:/opt/keycloak/data/import:ro
 
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: cadenzaflow
-      POSTGRES_USER: cadenzaflow
-      POSTGRES_PASSWORD: cadenzaflow
-
-  # Node 1 - the webapps, secured by Keycloak SSO (authorization_code).
-  webapp:
+  cadenzaflow:
     build: .
     depends_on:
       - keycloak
-      - postgres
     ports:
       - "8096:8080"
-    volumes:
-      - ./config/webapp.yml:/opt/cadenzaflow/configuration/default.yml:ro
-    command: ["/opt/cadenzaflow/internal/run.sh", "start", "--webapps", "--rest", "--oauth2"]
-    restart: on-failure
-
-  # Node 2 - engine-rest only, gated by the token-claim RBAC rules
-  # (openid-rbac-security). Same engine database = one cluster.
-  # --oauth2 is needed for the spring-security jars; no client registration
-  # is configured here, so the SSO login chain never comes up on this node.
-  rest:
-    build: .
-    depends_on:
-      - keycloak
-      - postgres
-    ports:
-      - "8097:8080"
-    volumes:
-      - ./config/rest.yml:/opt/cadenzaflow/configuration/default.yml:ro
-    command: ["/opt/cadenzaflow/internal/run.sh", "start", "--rest", "--oauth2"]
     restart: on-failure

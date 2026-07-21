@@ -1,13 +1,10 @@
-# Node 1 (webapp): Keycloak SSO via authorization_code - the validated recipe.
-# The image also carries the openid-rbac-security jars (shared image); its
-# resource-server chain must not come up NEXT TO the SSO login chain (both
-# match any request - see the README), so it is excluded on this node.
+# Single instance: Keycloak SSO for the webapps AND token-claim RBAC on
+# /engine-rest, in one JVM. The platform's oauth2 autoconfiguration (its
+# login chain matches any request) is replaced by the example's scoped copy
+# (sso-chain module) so it can coexist with the RBAC chain.
 
 spring.autoconfigure.exclude:
-  - org.opentmf.security.config.ServletSecurityAutoConfiguration
-  - org.opentmf.security.config.ServletJwtAutoConfiguration
-  - org.opentmf.security.config.ReactiveSecurityAutoConfiguration
-  - org.opentmf.security.config.ReactiveJwtAutoConfiguration
+  - org.cadenzaflow.bpm.spring.boot.starter.security.oauth2.CamundaSpringSecurityOAuth2AutoConfiguration
 
 cadenzaflow.bpm:
   webapp:
@@ -33,10 +30,10 @@ cadenzaflow.bpm:
           administratorGroupName: cadenzaflow-admin
 
 spring.datasource:
-  url: jdbc:postgresql://postgres:5432/cadenzaflow
-  driver-class-name: org.postgresql.Driver
-  username: cadenzaflow
-  password: cadenzaflow
+  url: jdbc:h2:./cadenzaflow-h2/process-engine;TRACE_LEVEL_FILE=0;DB_CLOSE_ON_EXIT=FALSE
+  driver-class-name: org.h2.Driver
+  username: sa
+  password: sa
 
 spring.web.resources:
   static-locations: NULL
@@ -57,3 +54,33 @@ spring.security.oauth2.client:
       jwk-set-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/certs
       user-info-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/userinfo
       user-name-attribute: preferred_username
+
+# --- token-claim RBAC gate on /engine-rest (openid-rbac-security) ---
+# "roles" = values of the token's "groups" claim (group-membership mapper on
+# the client, see realm/cadenzaflow-realm.json).
+opentmf:
+  security:
+    jwk-set-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/certs
+    user-claim: preferred_username
+    authorities-claim: groups
+    secure-endpoints:
+      - method: GET
+        path: /engine-rest/**
+        roles:
+          - cadenzaflow-admin
+          - accounting
+      - method: POST
+        path: /engine-rest/**
+        roles:
+          - cadenzaflow-admin
+      - method: PUT
+        path: /engine-rest/**
+        roles:
+          - cadenzaflow-admin
+      - method: DELETE
+        path: /engine-rest/**
+        roles:
+          - cadenzaflow-admin
+    whitelist:
+      - /
+      - /error
