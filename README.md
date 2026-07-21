@@ -602,9 +602,12 @@ Keep in mind that Keycloak's `email` attribute might not always be unique, depen
 Installation on CadenzaFlow Run and Apache Tomcat is covered by
 ["Installing on CadenzaFlow"](#installing-on-cadenzaflow) and the
 [Quickstart](#quickstart-cadenzaflow-run--keycloak-sso-end-to-end) at the top
-of this README. This fork does not carry the upstream `examples/` directory
-(Run/Tomcat/Wildfly/Kubernetes walk-throughs); if you need those references,
-they live in the
+of this README. A complete, buildable Docker/Compose SSO example — Run +
+Keycloak + this plugin with a demo realm, one `docker compose up --build`
+away — lives in [`examples/run-sso-docker/`](examples/run-sso-docker/); its
+README also spells out the authorization model (token authenticates, Keycloak
+*groups* authorize). The upstream `examples/` walk-throughs
+(Wildfly/Kubernetes etc.) are not carried by this fork; they live in the
 [upstream repository](https://github.com/cibseven-community-hub/cibseven-keycloak).
 
 ## Unit testing the plugin

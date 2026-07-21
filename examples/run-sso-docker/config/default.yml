@@ -1,0 +1,65 @@
+# CadenzaFlow Run + Keycloak SSO — validated example configuration.
+# Split-URL setup: the browser reaches Keycloak at http://localhost:8095,
+# Run reaches it inside the compose network at http://keycloak:8080.
+# The Keycloak side of that split is handled by KC_HOSTNAME (compose file).
+
+cadenzaflow.bpm:
+  # NOTE: no admin-user block on purpose. Identity is READ-ONLY via the
+  # Keycloak plugin; admin rights come from administratorGroupName below.
+  webapp:
+    application-path: /cadenzaflow
+  oauth2:
+    # groups come from the cadenzaflow-keycloak engine plugin,
+    # NOT from the OAuth2 principal / claim mapper
+    identity-provider:
+      enabled: false
+    sso-logout:
+      enabled: true
+  # Authorization MUST be enabled via this first-class property, NOT via
+  # generic-properties (DefaultAuthorizationConfiguration would silently
+  # overwrite the flag with its default). With this on, the plugin seeds
+  # ADMIN authorization rows for administratorGroupName at first boot.
+  authorization:
+    enabled: true
+  run:
+    example:
+      enabled: false
+    process-engine-plugins:
+      - plugin-class: org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin
+        plugin-parameters:
+          keycloakIssuerUrl: http://keycloak:8080/realms/cadenzaflow
+          keycloakAdminUrl: http://keycloak:8080/admin/realms/cadenzaflow
+          clientId: cadenzaflow-webapps
+          clientSecret: change-me-demo-secret
+          useUsernameAsCamundaUserId: true
+          administratorGroupName: cadenzaflow-admin
+
+spring.datasource:
+  # demo only - file H2 inside the container, gone when the container is removed
+  url: jdbc:h2:./cadenzaflow-h2/process-engine;TRACE_LEVEL_FILE=0;DB_CLOSE_ON_EXIT=FALSE
+  driver-class-name: org.h2.Driver
+  username: sa
+  password: sa
+
+spring.web.resources:
+  static-locations: NULL
+
+# authorization_code login. issuer-uri is deliberately NOT set (no discovery):
+# with split URLs the endpoints are listed individually and redirect-uri must
+# be explicit.
+spring.security.oauth2.client:
+  registration:
+    keycloak:
+      provider: keycloak
+      client-id: cadenzaflow-webapps
+      client-secret: change-me-demo-secret
+      scope: openid,profile,email
+      authorization-grant-type: authorization_code
+      redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+  provider:
+    keycloak:
+      authorization-uri: http://localhost:8095/realms/cadenzaflow/protocol/openid-connect/auth
+      token-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/token
+      jwk-set-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/certs
+      user-info-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/userinfo
+      user-name-attribute: preferred_username

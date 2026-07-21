@@ -1,0 +1,25 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.6
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Split-URL fix: pin the issuer to the browser-facing URL so tokens
+      # minted/validated via the compose-internal URL (keycloak:8080) carry
+      # and accept the same iss. Without this the webapp's userinfo call
+      # fails with 401 invalid_user_info_response and login bounces.
+      KC_HOSTNAME: http://localhost:8095
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    ports:
+      - "8095:8080"
+    volumes:
+      - ./realm:/opt/keycloak/data/import:ro
+
+  cadenzaflow:
+    build: .
+    depends_on:
+      - keycloak
+    ports:
+      - "8096:8080"
+    restart: on-failure
