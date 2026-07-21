@@ -1,0 +1,59 @@
+# Node 1 (webapp): Keycloak SSO via authorization_code - the validated recipe.
+# The image also carries the openid-rbac-security jars (shared image); its
+# resource-server chain must not come up NEXT TO the SSO login chain (both
+# match any request - see the README), so it is excluded on this node.
+
+spring.autoconfigure.exclude:
+  - org.opentmf.security.config.ServletSecurityAutoConfiguration
+  - org.opentmf.security.config.ServletJwtAutoConfiguration
+  - org.opentmf.security.config.ReactiveSecurityAutoConfiguration
+  - org.opentmf.security.config.ReactiveJwtAutoConfiguration
+
+cadenzaflow.bpm:
+  webapp:
+    application-path: /cadenzaflow
+  oauth2:
+    identity-provider:
+      enabled: false
+    sso-logout:
+      enabled: true
+  authorization:
+    enabled: true
+  run:
+    example:
+      enabled: false
+    process-engine-plugins:
+      - plugin-class: org.cadenzaflow.bpm.extension.keycloak.plugin.KeycloakIdentityProviderPlugin
+        plugin-parameters:
+          keycloakIssuerUrl: http://keycloak:8080/realms/cadenzaflow
+          keycloakAdminUrl: http://keycloak:8080/admin/realms/cadenzaflow
+          clientId: cadenzaflow-webapps
+          clientSecret: change-me-demo-secret
+          useUsernameAsCamundaUserId: true
+          administratorGroupName: cadenzaflow-admin
+
+spring.datasource:
+  url: jdbc:postgresql://postgres:5432/cadenzaflow
+  driver-class-name: org.postgresql.Driver
+  username: cadenzaflow
+  password: cadenzaflow
+
+spring.web.resources:
+  static-locations: NULL
+
+spring.security.oauth2.client:
+  registration:
+    keycloak:
+      provider: keycloak
+      client-id: cadenzaflow-webapps
+      client-secret: change-me-demo-secret
+      scope: openid,profile,email
+      authorization-grant-type: authorization_code
+      redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+  provider:
+    keycloak:
+      authorization-uri: http://localhost:8095/realms/cadenzaflow/protocol/openid-connect/auth
+      token-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/token
+      jwk-set-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/certs
+      user-info-uri: http://keycloak:8080/realms/cadenzaflow/protocol/openid-connect/userinfo
+      user-name-attribute: preferred_username

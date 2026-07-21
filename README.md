@@ -611,7 +611,10 @@ of this README. A complete, buildable Docker/Compose SSO example — Run +
 Keycloak + this plugin with a demo realm, one `docker compose up --build`
 away — lives in [`examples/run-sso-docker/`](examples/run-sso-docker/); its
 README also spells out the authorization model (token authenticates, Keycloak
-*groups* authorize). The upstream `examples/` walk-throughs
+*groups* authorize). A second example,
+[`examples/run-sso-rbac-docker/`](examples/run-sso-rbac-docker/), adds a
+token-claim RBAC gate in front of `engine-rest` (OpenTMF's
+openid-rbac-security — the opentmf-camunda7 model) next to the SSO webapps. The upstream `examples/` walk-throughs
 (Wildfly/Kubernetes etc.) are not carried by this fork; they live in the
 [upstream repository](https://github.com/cibseven-community-hub/cibseven-keycloak).
 
