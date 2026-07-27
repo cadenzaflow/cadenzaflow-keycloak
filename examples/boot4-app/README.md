@@ -29,24 +29,24 @@ That last one is not theoretical — see below.
 
 ```bash
 mvn verify                                  # needs Docker for Testcontainers
-mvn verify -Dversion.cadenzaflow=1.2.1      # try another platform version
+mvn verify -Dversion.cadenzaflow=1.2.0      # e.g. to reproduce the old failure
 ```
 
-## Status: the example is proven; the published starters are not
+## Status: green against published artifacts (platform ≥ 1.2.1)
 
-Two runs, two different answers — which is exactly what makes this useful:
+Verified 2026-07-27 in a **clean local repository**, resolving only from the
+CadenzaFlow Nexus and Maven Central: platform **1.2.1** + plugin **1.1.1** →
+2/2 tests, engine boots on Spring Boot 4 / Spring Framework 7, users and
+groups federate from a real Keycloak, admin authorizations seeded. This runs
+in CI on every push.
 
-| Resolved from | Result |
-|---|---|
-| a locally built platform (consistent POM chain) | ✅ **green** — 2/2 tests, engine boots on Spring Boot 4, federation and admin seeding verified against a real Keycloak |
-| **published** artifacts only (clean local repository) | ❌ **fails before compiling** — see below |
+It earned its keep on day one: against platform **1.2.0** the same example
+could not even resolve its dependencies, which is how the defect below was
+found and fixed.
 
-So the application code, the plugin's `-4` line and the test are correct; what
-is broken is the *publication* of the platform starters.
+## The bug this example caught (fixed in platform 1.2.1)
 
-## Known failure today: the published `-4` starters cannot be consumed
-
-As of 2026-07-27 this example **does not build against platform 1.2.0**:
+Against platform 1.2.0 the build failed with:
 
 ```
 Failed to read artifact descriptor for
@@ -71,6 +71,6 @@ artifacts succeeds** — that path tolerates an unresolvable import. Only a real
 project collecting its dependency tree fails. A published artifact can look
 fine to a spot check and still be unusable.
 
-The fix is a full-reactor platform release (master already defines the
-property). Once that is out, run this example with the new version; when it
-goes green, consumption is proven for real.
+Fixed by the full-reactor 1.2.1 release: cadenzaflow-parent:1.2.1 now carries
+the property, and this example verifies it on every run. To check another
+version: mvn verify -Dversion.cadenzaflow=<version>

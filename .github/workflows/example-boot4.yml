@@ -5,19 +5,20 @@ name: Example - Spring Boot 4 app (consumer canary)
 # (Spring Boot 4 + starter-4 + the plugin), so it catches regressions the
 # unit suite cannot see - including broken published POM chains.
 #
-# Not on push yet: the platform's published 1.2.0 -4 starters cannot be
-# consumed (their parent chain references an undefined property), so this
-# job fails for a reason outside this repository. Once the platform
-# republishes, set version_cadenzaflow to that release, confirm green, and
-# add `push`/`pull_request` triggers.
+# Runs on every push/PR since platform 1.2.1: that release fixed the POM
+# chain of the -4 starters, and this example was the test that proved it
+# (clean local repository, resolving only from Nexus + Central, 2/2 green).
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
     inputs:
       version_cadenzaflow:
         description: 'CadenzaFlow platform version to consume'
         required: false
-        default: '1.2.0'
+        default: '1.2.1'
         type: string
       version_plugin:
         description: 'cadenzaflow-keycloak-4 version to consume'
@@ -46,7 +47,7 @@ jobs:
         working-directory: examples/boot4-app
         run: |
           mvn -B verify \
-            -Dversion.cadenzaflow=${{ inputs.version_cadenzaflow || '1.2.0' }} \
+            -Dversion.cadenzaflow=${{ inputs.version_cadenzaflow || '1.2.1' }} \
             -Dversion.cadenzaflow-keycloak=${{ inputs.version_plugin || '1.1.1' }}
 
       - name: Upload surefire/failsafe reports
