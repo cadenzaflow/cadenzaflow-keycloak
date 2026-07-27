@@ -31,6 +31,7 @@
 
     <!-- spring-7 line (-4 artifact): Spring Boot 4 / starter-4 family -->
     <version.spring-web7>7.0.8</version.spring-web7>
+    <version.spring-boot4>4.0.7</version.spring-boot4>
 
     <!-- java11 line: javax Tomcat distribution -->
     <version.spring-web5>5.3.39</version.spring-web5>
@@ -91,11 +92,6 @@
       <dependency>
         <groupId>org.cadenzaflow.bpm.springboot</groupId>
         <artifactId>cadenzaflow-bpm-spring-boot-starter-test</artifactId>
-        <version>${version.cadenzaflow}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.cadenzaflow.bpm.springboot</groupId>
-        <artifactId>cadenzaflow-bpm-spring-boot-starter-test-4</artifactId>
         <version>${version.cadenzaflow}</version>
       </dependency>
       <dependency>

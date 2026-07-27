@@ -25,6 +25,24 @@
 		<failOnMissingWebXml>false</failOnMissingWebXml>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<!-- module-scoped: supplies consistent versions for the Boot 4 test
+			     stack below. Deliberately NOT the cadenzaflow starter-test-4:
+			     the -4 starter POM chain deployed at 1.2.0 references a
+			     property (version.spring.framework7) its deployed parents do
+			     not define, so its descriptor is unreadable from a clean
+			     repository until the platform republishes (1.2.1). -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${version.spring-boot4}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.cadenzaflow.bpm</groupId>
@@ -64,10 +82,24 @@
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
-		<!-- the shared upstream suite, run on the Boot 4 test stack -->
+		<!-- the shared upstream suite, run on the plain Boot 4 test stack
+		     (same pieces the cadenzaflow starter-test-4 assembles) -->
 		<dependency>
-			<groupId>org.cadenzaflow.bpm.springboot</groupId>
-			<artifactId>cadenzaflow-bpm-spring-boot-starter-test-4</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- JUnit 4 execution for the upstream (JUnit-3-style) suite -->
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
 
