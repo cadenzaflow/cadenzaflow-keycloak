@@ -32,6 +32,18 @@ mvn verify                                  # needs Docker for Testcontainers
 mvn verify -Dversion.cadenzaflow=1.2.1      # try another platform version
 ```
 
+## Status: the example is proven; the published starters are not
+
+Two runs, two different answers — which is exactly what makes this useful:
+
+| Resolved from | Result |
+|---|---|
+| a locally built platform (consistent POM chain) | ✅ **green** — 2/2 tests, engine boots on Spring Boot 4, federation and admin seeding verified against a real Keycloak |
+| **published** artifacts only (clean local repository) | ❌ **fails before compiling** — see below |
+
+So the application code, the plugin's `-4` line and the test are correct; what
+is broken is the *publication* of the platform starters.
+
 ## Known failure today: the published `-4` starters cannot be consumed
 
 As of 2026-07-27 this example **does not build against platform 1.2.0**:

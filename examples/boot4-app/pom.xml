@@ -30,6 +30,9 @@
          where the spring-6 compiled jar fails with IncompatibleClassChangeError -->
     <version.cadenzaflow-keycloak>1.1.1</version.cadenzaflow-keycloak>
     <version.testcontainers-keycloak>4.1.1</version.testcontainers-keycloak>
+    <!-- must match what testcontainers-keycloak brings in, see
+         https://github.com/dasniko/testcontainers-keycloak/blob/main/docs/versions.md -->
+    <version.testcontainers>1.21.4</version.testcontainers>
   </properties>
 
   <repositories>
@@ -72,6 +75,13 @@
       <groupId>com.github.dasniko</groupId>
       <artifactId>testcontainers-keycloak</artifactId>
       <version>${version.testcontainers-keycloak}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- the @Testcontainers/@Container JUnit 5 extension -->
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${version.testcontainers}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
