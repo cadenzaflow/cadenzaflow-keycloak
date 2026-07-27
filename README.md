@@ -16,11 +16,14 @@ Differences from upstream:
 
   | Artifact | HTTP stack | Java | Use in |
   |---|---|---|---|
-  | `cadenzaflow-keycloak` | spring-web 6 / httpclient5 (upstream code untouched) | 17 | Run, Spring Boot starter, jakarta environments |
+  | `cadenzaflow-keycloak` | spring-web 6 / httpclient5 (upstream code untouched) | 17 | Run, Spring Boot 3 starter, jakarta environments |
+  | `cadenzaflow-keycloak-4` | spring-web 7 / httpclient5 (same sources, recompiled) | 17 | **Spring Boot 4 / starter-4 applications** — the spring-6 jar fails there with `IncompatibleClassChangeError` (Spring 7 changed binary signatures: `HttpHeaders` no longer implements `MultiValueMap`) |
   | `cadenzaflow-keycloak-java11` | spring-web 5.3 / httpclient 4 | 11 | javax Tomcat distribution |
 
-  The two differ in exactly ONE class (`KeycloakIdentityProviderFactory`,
-  HTTP client wiring); all other sources are shared at build time.
+  The java11 line differs in exactly ONE class (`KeycloakIdentityProviderFactory`,
+  HTTP client wiring); the `-4` line has zero source differences. All other
+  sources are shared at build time, and the full test suite runs on both the
+  Boot 3 and the Boot 4 test stack.
 * Carries only the core `extension` module. Upstream's `extension-jwt` is NOT
   included — CadenzaFlow's engine-rest ships its own framework-free Bearer
   provider (see the platform's engine-rest README).

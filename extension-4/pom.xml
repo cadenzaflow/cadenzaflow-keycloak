@@ -1,0 +1,150 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+	  <groupId>org.cadenzaflow.bpm.extension</groupId>
+	  <artifactId>cadenzaflow-keycloak-root</artifactId>
+      <version>1.0.2-SNAPSHOT</version>
+	</parent>
+
+    <artifactId>cadenzaflow-keycloak-4</artifactId>
+
+	<packaging>jar</packaging>
+    <name>CadenzaFlow - engine plugins - identity - keycloak - extension (Spring 7)</name>
+	<description>
+	  Spring Framework 7 line of the CadenzaFlow Keycloak identity plugin, for
+	  Spring Boot 4 / the cadenzaflow starter-4 family. Identical sources to
+	  the primary artifact, recompiled against spring-web 7: Spring 7 changed
+	  binary signatures the 6-compiled jar depends on (HttpHeaders no longer
+	  implements MultiValueMap, so e.g. the HttpEntity constructors take
+	  HttpHeaders now), which makes the primary jar fail with
+	  IncompatibleClassChangeError on a Spring 7 classpath.
+	</description>
+
+	<properties>
+		<failOnMissingWebXml>false</failOnMissingWebXml>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.cadenzaflow.bpm</groupId>
+			<artifactId>cadenzaflow-engine</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>${version.spring-web7}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.cadenzaflow.commons</groupId>
+			<artifactId>cadenzaflow-commons-logging</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents.client5</groupId>
+			<artifactId>httpclient5</artifactId>
+			<version>${version.httpclient5}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+		</dependency>
+
+        <dependency>
+          <groupId>com.google.code.gson</groupId>
+          <artifactId>gson</artifactId>
+        </dependency>
+
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+
+		<!-- the shared upstream suite, run on the Boot 4 test stack -->
+		<dependency>
+			<groupId>org.cadenzaflow.bpm.springboot</groupId>
+			<artifactId>cadenzaflow-bpm-spring-boot-starter-test-4</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.dasniko</groupId>
+			<artifactId>testcontainers-keycloak</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<testResources>
+			<testResource>
+				<directory>${project.basedir}/../extension/src/test/resources</directory>
+				<filtering>true</filtering>
+			</testResource>
+		</testResources>
+		<plugins>
+			<plugin>
+				<!-- identical sources and tests as the primary module,
+				     recompiled against spring-web 7 -->
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-shared-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.basedir}/../extension/src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>add-shared-test-sources</id>
+						<phase>generate-test-sources</phase>
+						<goals>
+							<goal>add-test-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.basedir}/../extension/src/test/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>17</release>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<failIfNoTests>false</failIfNoTests>
+					<trimStackTrace>false</trimStackTrace>
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
