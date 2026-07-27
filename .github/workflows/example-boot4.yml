@@ -1,0 +1,59 @@
+name: Example - Spring Boot 4 app (consumer canary)
+
+# Builds examples/boot4-app against PUBLISHED artifacts and runs its
+# integration test against a real Keycloak. This is the customer scenario
+# (Spring Boot 4 + starter-4 + the plugin), so it catches regressions the
+# unit suite cannot see - including broken published POM chains.
+#
+# Not on push yet: the platform's published 1.2.0 -4 starters cannot be
+# consumed (their parent chain references an undefined property), so this
+# job fails for a reason outside this repository. Once the platform
+# republishes, set version_cadenzaflow to that release, confirm green, and
+# add `push`/`pull_request` triggers.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_cadenzaflow:
+        description: 'CadenzaFlow platform version to consume'
+        required: false
+        default: '1.2.0'
+        type: string
+      version_plugin:
+        description: 'cadenzaflow-keycloak-4 version to consume'
+        required: false
+        default: '1.1.1'
+        type: string
+  schedule:
+    - cron: '0 3 * * 1' # Monday morning - flags the day the platform fix lands
+
+jobs:
+  consumer-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Java setup
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      - name: Build the example and run its Keycloak integration test
+        working-directory: examples/boot4-app
+        run: |
+          mvn -B verify \
+            -Dversion.cadenzaflow=${{ inputs.version_cadenzaflow || '1.2.0' }} \
+            -Dversion.cadenzaflow-keycloak=${{ inputs.version_plugin || '1.1.1' }}
+
+      - name: Upload surefire/failsafe reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot4-example-reports
+          path: examples/boot4-app/target/*-reports/*
+          if-no-files-found: ignore
+          retention-days: 4

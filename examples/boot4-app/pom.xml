@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.0.7</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>org.cadenzaflow.bpm.examples</groupId>
+  <artifactId>boot4-keycloak-app</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <name>CadenzaFlow example - Spring Boot 4 app with Keycloak identity</name>
+  <description>
+    A realistic embedded application, modelled on how customers actually
+    consume CadenzaFlow: Spring Boot 4 + the cadenzaflow starter-4 family +
+    the Keycloak identity plugin, resolving everything from published
+    artifacts. Its integration test boots the real engine against a real
+    Keycloak, so it fails if the plugin, the starters, or their PUBLISHED POM
+    chains regress.
+  </description>
+
+  <properties>
+    <java.version>17</java.version>
+    <version.cadenzaflow>1.2.0</version.cadenzaflow>
+    <!-- the Spring 7 line of the plugin: Boot 4 runs Spring Framework 7,
+         where the spring-6 compiled jar fails with IncompatibleClassChangeError -->
+    <version.cadenzaflow-keycloak>1.1.1</version.cadenzaflow-keycloak>
+    <version.testcontainers-keycloak>4.1.1</version.testcontainers-keycloak>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>cadenzaflow-nexus</id>
+      <url>https://nexus.cadenzaflow.com/repository/cadenzaflow-nexus</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.cadenzaflow.bpm.springboot</groupId>
+      <artifactId>cadenzaflow-bpm-spring-boot-starter-4</artifactId>
+      <version>${version.cadenzaflow}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.cadenzaflow.bpm.extension</groupId>
+      <artifactId>cadenzaflow-keycloak-4</artifactId>
+      <version>${version.cadenzaflow-keycloak}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jdbc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+    </dependency>
+
+    <!-- test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <version>${version.testcontainers-keycloak}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -617,7 +617,11 @@ README also spells out the authorization model (token authenticates, Keycloak
 *groups* authorize). A second example,
 [`examples/run-sso-rbac-docker/`](examples/run-sso-rbac-docker/), adds a
 token-claim RBAC gate in front of `engine-rest` (OpenTMF's
-openid-rbac-security — the opentmf-camunda7 model) next to the SSO webapps. The upstream `examples/` walk-throughs
+openid-rbac-security — the opentmf-camunda7 model) next to the SSO webapps.
+A third, [`examples/boot4-app/`](examples/boot4-app/), is an embedded **Spring
+Boot 4** application (starter-4 + this plugin's `-4` line) whose integration
+test boots the engine against a real Keycloak — the customer scenario, built
+from published artifacts, so it doubles as a consumer canary. The upstream `examples/` walk-throughs
 (Wildfly/Kubernetes etc.) are not carried by this fork; they live in the
 [upstream repository](https://github.com/cibseven-community-hub/cibseven-keycloak).
 

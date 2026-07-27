@@ -1,0 +1,60 @@
+{
+  "realm": "cadenzaflow",
+  "enabled": true,
+  "sslRequired": "none",
+  "groups": [
+    { "name": "cadenzaflow-admin" },
+    { "name": "accounting" }
+  ],
+  "clients": [
+    {
+      "clientId": "cadenzaflow-webapps",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "change-me-demo-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["http://localhost:8096/*"],
+      "webOrigins": ["http://localhost:8096"],
+      "defaultClientScopes": ["openid", "profile", "email", "roles"],
+      "optionalClientScopes": []
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-cadenzaflow-webapps",
+      "enabled": true,
+      "serviceAccountClientId": "cadenzaflow-webapps",
+      "clientRoles": {
+        "realm-management": [
+          "view-realm",
+          "view-users",
+          "view-clients",
+          "query-users",
+          "query-groups",
+          "query-clients"
+        ]
+      }
+    },
+    {
+      "username": "kermit",
+      "enabled": true,
+      "email": "kermit@example.com",
+      "firstName": "Kermit",
+      "lastName": "Frog",
+      "credentials": [ { "type": "password", "value": "kermit", "temporary": false } ],
+      "groups": ["/cadenzaflow-admin"]
+    },
+    {
+      "username": "gonzo",
+      "enabled": true,
+      "email": "gonzo@example.com",
+      "firstName": "Gonzo",
+      "lastName": "Great",
+      "credentials": [ { "type": "password", "value": "gonzo", "temporary": false } ],
+      "groups": ["/accounting"]
+    }
+  ]
+}

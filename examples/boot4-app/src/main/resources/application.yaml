@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:boot4-example;DB_CLOSE_DELAY=1000
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+cadenzaflow.bpm:
+  # identity is read-only from Keycloak; admin comes from the group below
+  authorization:
+    enabled: true
+  job-execution:
+    enabled: false
+
+plugin.identity.keycloak:
+  keycloak-issuer-url: http://localhost:8095/realms/cadenzaflow
+  keycloak-admin-url: http://localhost:8095/admin/realms/cadenzaflow
+  client-id: cadenzaflow-webapps
+  client-secret: change-me-demo-secret
+  use-username-as-camunda-user-id: true
+  administrator-group-name: cadenzaflow-admin
