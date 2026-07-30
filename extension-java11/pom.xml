@@ -95,6 +95,24 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<plugin>
+				<!-- Javadoc does not honour the compiler excludes above, so it
+				     picks up the shared hc5 factory and fails on imports that
+				     are deliberately not on this module's classpath. Exclude
+				     the factory here too. It matches BOTH copies (they share a
+				     relative path), which is the right trade: the javadoc jar
+				     then covers the 28 shared classes instead of failing, and
+				     the factory itself is documented in the primary artifact.
+				     Only active in the central-publish profile, which is what
+				     attaches a javadoc jar at all. -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<sourceFileExcludes>
+						<exclude>**/KeycloakIdentityProviderFactory.java</exclude>
+					</sourceFileExcludes>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>

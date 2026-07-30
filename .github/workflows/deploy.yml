@@ -1,22 +1,47 @@
-name: Deploy to CadenzaFlow Nexus
+name: Release
 
-# Same pattern as the platform's nexus-deploy.yml: NEXUS_USERNAME/NEXUS_PASSWORD
-# org secrets + altDeploymentRepository. Tests are skipped by default because
-# the suite needs a live Keycloak (they run in build.yml on every push/PR).
+# One trigger, whole release: set the version, publish to the CadenzaFlow
+# Nexus and/or Maven Central, tag it, and cut a GitHub release.
+#
+# Tests are skipped by default because the suite needs a live Keycloak; they
+# run in build.yml on every push and PR.
+#
+# Two destinations, two mechanisms - see the central-publish profile in
+# pom.xml for why they cannot be one Maven invocation:
+#   Nexus   - maven-deploy-plugin, module by module, altDeploymentRepository
+#   Central - one signed bundle (sources + javadoc + GPG) via Sonatype's plugin
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Release version, e.g. 1.1.2. Empty = use the POM version as-is (Central rejects SNAPSHOTs).'
+        required: false
+        type: string
+      targets:
+        description: 'Where to publish'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - 'both'
+          - 'nexus'
+          - 'central'
       skip_tests:
-        description: 'Skip tests during deploy'
+        description: 'Skip tests during the release build'
         required: false
         default: 'true'
         type: choice
         options:
           - 'true'
           - 'false'
+      create_tag:
+        description: 'Tag v<version> and cut a GitHub release when publishing succeeds'
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
-  group: nexus-deploy-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -24,10 +49,12 @@ env:
   NEXUS_URL: https://nexus.cadenzaflow.com/repository/cadenzaflow-nexus
 
 jobs:
-  deploy:
-    name: Maven deploy to CadenzaFlow Nexus
+  release:
+    name: Publish ${{ inputs.targets }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -40,16 +67,63 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - name: Set and validate the release version
+        id: v
+        env:
+          WANT_VERSION: ${{ inputs.version }}
+          TARGETS: ${{ inputs.targets }}
+        run: |
+          if [ -n "${WANT_VERSION}" ]; then
+            mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.17.1:set \
+              -DnewVersion="${WANT_VERSION}" -DgenerateBackupPoms=false
+          fi
+          VERSION="$(mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout)"
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing version: ${VERSION}"
+
+          # Fail here rather than 20 minutes in: Maven Central only accepts
+          # release versions, and it rejects the whole bundle, not just the
+          # offending artifact.
+          case "${TARGETS}" in
+            central|both)
+              case "${VERSION}" in
+                *-SNAPSHOT)
+                  echo "::error::Maven Central does not accept SNAPSHOTs (${VERSION}). Pass a release version, or set targets=nexus."
+                  exit 1
+                  ;;
+              esac
+              ;;
+          esac
+
       - name: Configure Maven settings.xml
         env:
           NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
           NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          TARGETS: ${{ inputs.targets }}
         run: |
-          if [ -z "${NEXUS_USERNAME}" ] || [ -z "${NEXUS_PASSWORD}" ]; then
-            echo "::error::NEXUS_USERNAME or NEXUS_PASSWORD secret is missing."
-            exit 1
-          fi
+          case "${TARGETS}" in
+            nexus|both)
+              if [ -z "${NEXUS_USERNAME}" ] || [ -z "${NEXUS_PASSWORD}" ]; then
+                echo "::error::NEXUS_USERNAME or NEXUS_PASSWORD secret is missing."
+                exit 1
+              fi
+              ;;
+          esac
+          case "${TARGETS}" in
+            central|both)
+              if [ -z "${CENTRAL_TOKEN_USERNAME}" ] || [ -z "${CENTRAL_TOKEN_PASSWORD}" ]; then
+                echo "::error::CENTRAL_TOKEN_USERNAME or CENTRAL_TOKEN_PASSWORD secret is missing. Generate a user token at https://central.sonatype.com/account and add both to this repository's secrets."
+                exit 1
+              fi
+              ;;
+          esac
+
           mkdir -p ~/.m2
+          # Both server entries are always written; the values are resolved
+          # from the environment at RUN time, so whichever secrets are absent
+          # simply stay empty and unused by the target we are not publishing to.
           cat > ~/.m2/settings.xml <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
@@ -62,14 +136,37 @@ jobs:
                 <username>${env.NEXUS_USERNAME}</username>
                 <password>${env.NEXUS_PASSWORD}</password>
               </server>
+              <server>
+                <id>central</id>
+                <username>${env.CENTRAL_TOKEN_USERNAME}</username>
+                <password>${env.CENTRAL_TOKEN_PASSWORD}</password>
+              </server>
             </servers>
           </settings>
           EOF
 
-      - name: Show project version
-        run: mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout && echo
+      - name: Import the release signing key
+        if: ${{ inputs.targets == 'central' || inputs.targets == 'both' }}
+        env:
+          GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "${GPG_KEY}" ]; then
+            echo "::error::MAVEN_GPG_PRIVATE_KEY secret is missing. Central requires every artifact to be signed."
+            exit 1
+          fi
+          # Tell gpg to take the passphrase from the command line instead of
+          # asking a terminal, which CI does not have. Without this every
+          # signature fails with "Inappropriate ioctl for device".
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+          printf 'pinentry-mode loopback\nbatch\nno-tty\n' >> ~/.gnupg/gpg.conf
+          printf 'allow-loopback-pinentry\n' >> ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent || true
 
-      - name: Maven deploy
+          printf '%s' "${GPG_KEY}" | gpg --batch --import
+          gpg --list-secret-keys --keyid-format=long | sed -n '1,6p'
+
+      - name: Publish to CadenzaFlow Nexus
+        if: ${{ inputs.targets == 'nexus' || inputs.targets == 'both' }}
         env:
           SKIP_TESTS: ${{ inputs.skip_tests || 'true' }}
           # settings.xml references ${env.NEXUS_*} - Maven resolves these at
@@ -89,13 +186,98 @@ jobs:
             -DaltDeploymentRepository="${NEXUS_REPO_ID}::${NEXUS_URL}" \
             ${SKIP_FLAG}
 
-      - name: Deploy summary
+      - name: Publish to Maven Central
+        if: ${{ inputs.targets == 'central' || inputs.targets == 'both' }}
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          # The profile attaches sources, javadoc and signatures, and pins
+          # autoPublish=false / waitUntil=validated: this uploads and validates
+          # but never makes anything public on its own.
+          mvn -B clean deploy \
+            -Pcentral-publish \
+            -DskipTests \
+            -Dgpg.passphrase="${GPG_PASSPHRASE}"
+
+      - name: Verify what actually landed
+        env:
+          VERSION: ${{ steps.v.outputs.VERSION }}
+          TARGETS: ${{ inputs.targets }}
+        run: |
+          # "Successful release, empty repository" has happened before on the
+          # platform, so check rather than trust the exit code.
+          FAILED=0
+          for A in cadenzaflow-keycloak cadenzaflow-keycloak-4 cadenzaflow-keycloak-java11; do
+            case "${TARGETS}" in
+              nexus|both)
+                URL="${NEXUS_URL}/org/cadenzaflow/bpm/extension/${A}/${VERSION}/${A}-${VERSION}.pom"
+                CODE="$(curl -s -o /dev/null -w '%{http_code}' "${URL}")"
+                echo "nexus   ${A}:${VERSION} -> ${CODE}"
+                [ "${CODE}" = "200" ] || FAILED=1
+                ;;
+            esac
+          done
+          if [ "${FAILED}" = "1" ]; then
+            echo "::error::At least one artifact is missing from the Nexus after a successful deploy."
+            exit 1
+          fi
+          case "${TARGETS}" in
+            central|both)
+              echo "::notice::Central deployment uploaded and validated. It is NOT public yet - press Publish at https://central.sonatype.com/publishing/deployments. Sync to repo1 takes a few minutes after that."
+              ;;
+          esac
+
+      - name: Tag and cut a GitHub release
+        if: ${{ inputs.create_tag && inputs.version != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.v.outputs.VERSION }}
+          TARGETS: ${{ inputs.targets }}
+        run: |
+          TAG="v${VERSION}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::notice::Tag ${TAG} already exists on the remote, leaving it alone."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "Release ${VERSION}"
+            git push origin "${TAG}"
+          fi
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::notice::GitHub release ${TAG} already exists."
+          else
+            gh release create "${TAG}" \
+              --title "${TAG}" \
+              --notes "CadenzaFlow Identity Provider Plugin for Keycloak ${VERSION}.
+
+          Published to: ${TARGETS}
+
+          Artifacts (\`org.cadenzaflow.bpm.extension\`):
+          - \`cadenzaflow-keycloak\` - Spring 6 / Java 17 line (Run, Spring Boot starter, jakarta)
+          - \`cadenzaflow-keycloak-4\` - Spring 7 line (Spring Boot 4, starter-4 family)
+          - \`cadenzaflow-keycloak-java11\` - Spring 5.3 / JDK 11 line (javax Tomcat distribution)"
+          fi
+
+      - name: Summary
         if: always()
+        env:
+          VERSION: ${{ steps.v.outputs.VERSION }}
+          TARGETS: ${{ inputs.targets }}
         run: |
           {
-            echo "## Nexus Deploy Result"
+            echo "## Release ${VERSION}"
             echo ""
-            echo "- Repository: \`${NEXUS_URL}\`"
+            echo "- Targets: \`${TARGETS}\`"
+            echo "- Nexus: \`${NEXUS_URL}\`"
             echo "- Ref: \`${GITHUB_REF}\`"
             echo "- Status: \`${{ job.status }}\`"
+            case "${TARGETS}" in
+              central|both)
+                echo ""
+                echo "Central deployments wait for a human: <https://central.sonatype.com/publishing/deployments>"
+                ;;
+            esac
           } >> "$GITHUB_STEP_SUMMARY"
