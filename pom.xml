@@ -22,8 +22,12 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- the engine this plugin is built and tested against -->
-    <version.cadenzaflow>1.2.0</version.cadenzaflow>
+    <!-- the engine this plugin is built and tested against. Keep this on a
+         version that is available on Maven Central: since this plugin is
+         published there too, a consumer outside our network must be able to
+         resolve everything the published POMs mention. 1.2.1 is the first
+         platform release on Central that carries the -4 starter family. -->
+    <version.cadenzaflow>1.2.1</version.cadenzaflow>
 
     <!-- primary line (upstream code, Java 17): Run / SB starter / jakarta -->
     <version.spring-web6>6.2.11</version.spring-web6>
@@ -112,13 +116,17 @@
     </dependencies>
   </dependencyManagement>
 
-  <repositories>
-    <!-- CadenzaFlow artifacts (engine, commons) are published here, not on Maven Central -->
-    <repository>
-      <id>cadenzaflow-nexus</id>
-      <url>https://nexus.cadenzaflow.com/repository/cadenzaflow-nexus</url>
-    </repository>
-  </repositories>
+  <!--
+    No <repositories> here on purpose.
+
+    This used to point at the CadenzaFlow Nexus, because the engine and commons
+    artifacts were only published there. Since platform 1.2.1 they are on Maven
+    Central, so the build resolves from Central alone - and, more importantly,
+    so does anyone consuming this plugin: a repository declared here would end
+    up in the PUBLISHED POM and silently send every consumer's build to our
+    Nexus. Verified: engine, commons-logging and starter-test all resolve at
+    ${version.cadenzaflow} from Central.
+  -->
 
   <build>
     <pluginManagement>
@@ -149,4 +157,109 @@
     <developerConnection>scm:git:https://github.com/cadenzaflow/cadenzaflow-keycloak.git</developerConnection>
     <url>https://github.com/cadenzaflow/cadenzaflow-keycloak</url>
   </scm>
+
+  <!-- required by Maven Central; matches the platform's own developers block -->
+  <developers>
+    <developer>
+      <id>cadenzaflow</id>
+      <name>CadenzaFlow Platform Community</name>
+      <organization>cadenzaflow.org</organization>
+      <organizationUrl>https://www.cadenzaflow.com</organizationUrl>
+    </developer>
+  </developers>
+
+  <profiles>
+    <!--
+      Publish to Maven Central, in addition to the CadenzaFlow Nexus.
+
+      Central needs three things the ordinary Nexus deploy does not: a sources
+      jar, a javadoc jar, and a GPG signature for every artifact. It also does
+      not accept a plain Maven deploy - Sonatype's plugin collects the whole
+      reactor into one signed bundle and uploads that - so the standard deploy
+      is switched off here.
+
+      autoPublish stays false and waitUntil stops at "validated" on purpose:
+      the upload is checked but nothing goes public until a human presses
+      Publish in the Central portal. Publishing is irreversible - a version
+      number can never be reused - so that click stays a human decision.
+
+      Note SNAPSHOTs cannot go to Central; deploy a release version.
+    -->
+    <profile>
+      <id>central-publish</id>
+      <properties>
+        <!-- no distributionManagement in this POM, so the standard deploy
+             would fail outright; the bundle upload replaces it -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.11.2</version>
+            <configuration>
+              <!-- Central requires the jar to exist, not to be immaculate;
+                   doclint would fail the release over missing @param tags
+                   inherited from upstream. -->
+              <doclint>none</doclint>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.7</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <configuration>
+                  <!-- CI has no terminal to type a passphrase into -->
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.8.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+              <waitUntil>validated</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
