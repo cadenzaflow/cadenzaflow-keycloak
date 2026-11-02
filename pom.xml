@@ -30,8 +30,8 @@
     <version.cadenzaflow>1.2.1</version.cadenzaflow>
 
     <!-- primary line (upstream code, Java 17): Run / SB starter / jakarta -->
-    <version.spring-web6>6.2.11</version.spring-web6>
-    <version.httpclient5>5.4.1</version.httpclient5>
+    <version.spring-web6>6.2.19</version.spring-web6>
+    <version.httpclient5>5.6.5</version.httpclient5>
 
     <!-- spring-7 line (-4 artifact): Spring Boot 4 / starter-4 family -->
     <version.spring-web7>7.0.8</version.spring-web7>
