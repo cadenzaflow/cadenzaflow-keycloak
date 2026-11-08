@@ -22,9 +22,9 @@ ARG CENTRAL=https://repo1.maven.org/maven2
 
 # --- identity plugin + runtime deps ---
 ADD ${NEXUS}/org/cadenzaflow/bpm/extension/cadenzaflow-keycloak/${PLUGIN_VERSION}/cadenzaflow-keycloak-${PLUGIN_VERSION}.jar /opt/cadenzaflow/configuration/userlib/
-ADD ${CENTRAL}/org/apache/httpcomponents/client5/httpclient5/5.4.1/httpclient5-5.4.1.jar /opt/cadenzaflow/configuration/userlib/
-ADD ${CENTRAL}/org/apache/httpcomponents/core5/httpcore5/5.3.4/httpcore5-5.3.4.jar /opt/cadenzaflow/configuration/userlib/
-ADD ${CENTRAL}/org/apache/httpcomponents/core5/httpcore5-h2/5.3.4/httpcore5-h2-5.3.4.jar /opt/cadenzaflow/configuration/userlib/
+ADD ${CENTRAL}/org/apache/httpcomponents/client5/httpclient5/5.6.5/httpclient5-5.6.5.jar /opt/cadenzaflow/configuration/userlib/
+ADD ${CENTRAL}/org/apache/httpcomponents/core5/httpcore5/5.4.4/httpcore5-5.4.4.jar /opt/cadenzaflow/configuration/userlib/
+ADD ${CENTRAL}/org/apache/httpcomponents/core5/httpcore5-h2/5.4.4/httpcore5-h2-5.4.4.jar /opt/cadenzaflow/configuration/userlib/
 ADD ${CENTRAL}/com/google/code/gson/gson/2.11.0/gson-2.11.0.jar /opt/cadenzaflow/configuration/userlib/
 ADD ${CENTRAL}/com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar /opt/cadenzaflow/configuration/userlib/
 ADD ${CENTRAL}/commons-codec/commons-codec/1.17.1/commons-codec-1.17.1.jar /opt/cadenzaflow/configuration/userlib/
