@@ -35,9 +35,9 @@ differs in one class, the one that sets up the HTTP client.
 
    ```
    cadenzaflow-keycloak-<version>.jar
-   httpclient5-5.4.1.jar
-   httpcore5-5.3.4.jar
-   httpcore5-h2-5.3.4.jar
+   httpclient5-5.6.5.jar
+   httpcore5-5.4.4.jar
+   httpcore5-h2-5.4.4.jar
    gson-2.11.0.jar
    caffeine-3.1.8.jar
    commons-codec-1.17.1.jar
