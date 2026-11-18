@@ -9,13 +9,12 @@
 
   <name>CadenzaFlow - engine plugins - identity - keycloak - root</name>
   <description>
-    CadenzaFlow Identity Provider Plugin for Keycloak. Fork of
-    cibseven-keycloak (the maintained continuation of the EOL
-    camunda-platform-7-keycloak community plugin), re-namespaced to
-    org.cadenzaflow. Two dependency lines: the primary artifact keeps
-    the upstream spring-web 6 / httpclient5 code (Java 17 - Run, Spring Boot
-    starter, jakarta); the -java11 artifact ports the HTTP wiring to
-    spring-web 5.3 / httpclient 4 for the javax Tomcat distribution (JDK 11).
+    Keycloak identity provider plugin for CadenzaFlow: the process engine
+    reads its users and groups from Keycloak. Three artifacts are built from
+    one code base: cadenzaflow-keycloak (Spring Web 6, Java 17),
+    cadenzaflow-keycloak-4 (Spring Web 7, for Spring Boot 4) and
+    cadenzaflow-keycloak-java11 (Spring Web 5.3, Java 11, for the Tomcat
+    distribution on javax).
   </description>
   <url>https://github.com/cadenzaflow/cadenzaflow-keycloak</url>
 
